@@ -168,14 +168,15 @@ export const createFlexMessageCard = (title, job, stageLabel, type = 'update', e
             contents: [
               {
                 type: 'text',
-                text: 'กำหนดส่งมอบ/วางขาย',
+                text: 'วางจำหน่าย (On-Sale)',
                 size: 'xs',
                 color: '#64748b',
                 flex: 0
               },
               {
                 type: 'text',
-                text: job.due_date || job.on_sale_date || 'ตามผังเวลา',
+                // Pull from the on_sale stage due_date in Process, fall back to job.on_sale_date, then job.due_date
+                text: job.stages?.on_sale?.due_date || job.on_sale_date || job.due_date || 'ยังไม่กำหนด',
                 size: 'xs',
                 color: type === 'overdue' ? '#dc2626' : '#0f172a',
                 weight: 'bold',
