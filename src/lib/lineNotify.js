@@ -33,7 +33,15 @@ export const setStoredGroupId = (groupId) => {
 /**
  * Build Professional LINE Flex Message Card
  */
-export const createFlexMessageCard = (title, job, stageLabel, type = 'update', extraText = '', assignee = '') => {
+export const createFlexMessageCard = (title, job, stageLabel, type = 'update', extraText = '', assignee = '', stageStatus = '', stageDueDate = '') => {
+  // Thai status label map
+  const statusLabelMap = {
+    pending: '⏳ Pending (รอเริ่มงาน)',
+    in_progress: '🔵 In Progress (กำลังดำเนินงาน)',
+    completed: '✅ Completed (เสร็จสิ้น)',
+    delayed: '⚠️ Delayed (ล่าช้ากว่ากำหนด)'
+  };
+  const statusDisplay = statusLabelMap[stageStatus] || stageStatus || '-';
   // Determine header color by type
   let headerBgColor = '#059669'; // Green (update)
   if (type === 'create') headerBgColor = '#2563eb'; // Blue (create)
@@ -161,29 +169,50 @@ export const createFlexMessageCard = (title, job, stageLabel, type = 'update', e
               }
             ]
           },
-          {
+          ...(stageStatus ? [{
             type: 'box',
             layout: 'horizontal',
             margin: 'sm',
             contents: [
               {
                 type: 'text',
-                text: 'วางจำหน่าย (On-Sale)',
+                text: 'สถานะขั้นตอน (Status)',
                 size: 'xs',
                 color: '#64748b',
                 flex: 0
               },
               {
                 type: 'text',
-                // Pull from the on_sale stage due_date in Process, fall back to job.on_sale_date, then job.due_date
-                text: job.stages?.on_sale?.due_date || job.on_sale_date || job.due_date || 'ยังไม่กำหนด',
+                text: statusDisplay,
+                size: 'xs',
+                color: stageStatus === 'completed' ? '#059669' : stageStatus === 'delayed' ? '#dc2626' : stageStatus === 'in_progress' ? '#2563eb' : '#64748b',
+                weight: 'bold',
+                align: 'end'
+              }
+            ]
+          }] : []),
+          ...(stageDueDate ? [{
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: 'กำหนดส่งขั้นตอนนี้',
+                size: 'xs',
+                color: '#64748b',
+                flex: 0
+              },
+              {
+                type: 'text',
+                text: stageDueDate,
                 size: 'xs',
                 color: type === 'overdue' ? '#dc2626' : '#0f172a',
                 weight: 'bold',
                 align: 'end'
               }
             ]
-          },
+          }] : []),
           ...(assignee ? [{
             type: 'box',
             layout: 'horizontal',
@@ -306,10 +335,13 @@ export const notifyJobStatusUpdated = async (job, stageLabel, updatedBy) => {
 
   // Get the assignee from the current stage's Process data
   const currentStageId = stageObj?.id || job.current_stage;
-  const stageAssignee = job.stages?.[currentStageId]?.assignee || updatedBy || '';
+  const currentStageData = job.stages?.[currentStageId] || {};
+  const stageAssignee = currentStageData.assignee || updatedBy || '';
+  const stageStatus = currentStageData.status || '';
+  const stageDueDate = currentStageData.due_date || '';
 
-  const flexMessage = createFlexMessageCard('🔄 อัปเดตสถานะ & กำหนดส่ง', job, displayStageName, 'update', '', stageAssignee);
-  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${displayStageName}\n📅 กำหนดส่ง: ${job.stages?.on_sale?.due_date || job.on_sale_date || job.due_date || 'ยังไม่กำหนด'}\n👤 ผู้รับผิดชอบ: ${stageAssignee}`;
+  const flexMessage = createFlexMessageCard('🔄 อัปเดตสถานะ & กำหนดส่ง', job, displayStageName, 'update', '', stageAssignee, stageStatus, stageDueDate);
+  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${displayStageName}\n📊 สถานะ: ${stageStatus}\n📅 กำหนดส่ง: ${stageDueDate || 'ยังไม่กำหนด'}\n👤 ผู้รับผิดชอบ: ${stageAssignee}`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 
