@@ -99,60 +99,63 @@ function App() {
 
   // Handlers
   const handleCreateJob = async (newJob) => {
-    const updatedJobs = [newJob, ...jobs];
-    setJobs(updatedJobs);
-    
-    // Add notification
-    const newNotif = {
-      id: `n-${Date.now()}`,
-      job_id: newJob.id,
-      title: '✨ โครงการผลิตสินค้าใหม่เปิดเรียบร้อย',
-      message: `${newJob.id} (${newJob.project_name}) เข้าสู่กระบวนการติดตามงานผลิต`,
-      timestamp: new Date().toISOString(),
-      read: false,
-      type: 'info'
-    };
-    setNotifications([newNotif, ...notifications]);
-
-    setActiveTab('dashboard');
-
-    // Sync to Supabase DB & Send LINE Notification
     try {
-      await saveJobToSupabase(newJob);
-      await saveNotificationToSupabase(newNotif);
-    } catch (e) {
-      console.warn('Could not sync created job to Supabase:', e);
-    }
+      const savedJob = await saveJobToSupabase(newJob);
+      const finalJob = savedJob || newJob;
 
-    // Send LINE Bot message to group
-    notifyJobCreated(newJob).catch(() => {});
+      const updatedJobs = [finalJob, ...jobs.filter(j => j.id !== finalJob.id)];
+      setJobs(updatedJobs);
+      localStorage.setItem('niitan_crm_jobs', JSON.stringify(updatedJobs));
+
+      const newNotif = {
+        id: `n-${Date.now()}`,
+        job_id: finalJob.id,
+        title: '✨ โครงการผลิตสินค้าใหม่เปิดเรียบร้อย',
+        message: `${finalJob.id} (${finalJob.project_name}) เข้าสู่กระบวนการติดตามงานผลิต`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: 'info'
+      };
+      setNotifications([newNotif, ...notifications]);
+      saveNotificationToSupabase(newNotif).catch(() => {});
+
+      setActiveTab('dashboard');
+      notifyJobCreated(finalJob).catch(() => {});
+    } catch (e) {
+      console.error('Could not sync created job to Supabase:', e);
+      alert('⚠️ ไม่สามารถสร้างข้อมูลใน Supabase DB ได้: ' + (e.message || e));
+    }
   };
 
   const handleUpdateJob = async (updatedJob) => {
-    setJobs(jobs.map(j => j.id === updatedJob.id ? updatedJob : j));
-
-    // Sync to Supabase DB if connected
     try {
-      await saveJobToSupabase(updatedJob);
-    } catch (e) {
-      console.warn('Could not sync updated job to Supabase:', e);
-    }
+      const savedJob = await saveJobToSupabase(updatedJob);
+      const finalJob = savedJob || updatedJob;
 
-    // Send LINE Bot message to group
-    notifyJobStatusUpdated(updatedJob, updatedJob.current_stage || 'อัปเดตงาน', userRole).catch(() => {});
+      const newJobs = jobs.map(j => j.id === finalJob.id ? finalJob : j);
+      setJobs(newJobs);
+      localStorage.setItem('niitan_crm_jobs', JSON.stringify(newJobs));
+      notifyJobStatusUpdated(finalJob, finalJob.current_stage || 'อัปเดตงาน', userRole).catch(() => {});
+    } catch (e) {
+      console.error('Could not sync updated job to Supabase:', e);
+      alert('⚠️ ไม่สามารถบันทึกข้อมูลไปยัง Supabase DB ได้: ' + (e.message || e));
+    }
   };
 
   const handleDeleteJob = async (jobId) => {
-    if (!window.confirm('⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบโครงการนี้ออกจากระบบ?')) return;
-    const updatedJobs = jobs.filter(j => j.id !== jobId);
-    setJobs(updatedJobs);
-    if (selectedJobId === jobId) {
-      setSelectedJobId(null);
-    }
+    if (!window.confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบโครงการ ${jobId} ออกจากระบบ?`)) return;
+    
     try {
       await deleteJobFromSupabase(jobId);
+      const updatedJobs = jobs.filter(j => j.id !== jobId);
+      setJobs(updatedJobs);
+      localStorage.setItem('niitan_crm_jobs', JSON.stringify(updatedJobs));
+      if (selectedJobId === jobId) {
+        setSelectedJobId(null);
+      }
     } catch (e) {
-      console.warn('Could not delete job from Supabase:', e);
+      console.error('Could not delete job from Supabase:', e);
+      alert('⚠️ ไม่สามารถลบข้อมูลจาก Supabase DB ได้: ' + (e.message || e));
     }
   };
 
@@ -251,39 +254,8 @@ function App() {
               </div>
             </div>
 
-            {/* Right Tools: Test LINE Button, Role Switcher & Notifications */}
+            {/* Right Tools: Role Switcher & Notifications */}
             <div className="flex items-center gap-2.5">
-              <button
-                onClick={loadDataFromSupabase}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
-                title="กดเพื่อดึงข้อมูลจริงล่าสุดจาก Supabase Database ทันที"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                รีเฟรชข้อมูล DB
-              </button>
-
-              {isDbConnected && (
-                <div 
-                  className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200/80 rounded-xl text-xs font-bold"
-                  title="เชื่อมต่อและดึงข้อมูลจริงเรียลไทม์จาก Supabase Database"
-                >
-                  <Database className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
-                  ข้อมูลจริง Supabase DB
-                </div>
-              )}
-
-              <button
-                onClick={async () => {
-                  const success = await sendTestLineNotification();
-                  alert(success ? '🚀 ส่งการ์ดแจ้งเตือนทดสอบเข้า LINE เรียบร้อยแล้ว!' : '⚠️ ส่งข้อความทดสอบไปยัง LINE');
-                }}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                title="ทดสอบยิงข้อความเข้า LINE"
-              >
-                <MessageSquare className="w-4 h-4 text-emerald-600" />
-                ทดสอบส่ง LINE
-              </button>
-
               <RoleBadge 
                 currentRole={userRole} 
                 onRoleChange={(roleId) => setUserRole(roleId)} 

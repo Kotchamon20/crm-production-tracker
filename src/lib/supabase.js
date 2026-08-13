@@ -94,14 +94,13 @@ export const saveJobToSupabase = async (job) => {
   const { data, error } = await client
     .from('jobs')
     .upsert(payload, { onConflict: 'id' })
-    .select()
-    .single();
+    .select();
 
   if (error) {
     console.error('Supabase saveJob error:', error);
     throw error;
   }
-  return data;
+  return (data && data.length > 0) ? data[0] : payload;
 };
 
 /**
