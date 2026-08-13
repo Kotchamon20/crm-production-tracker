@@ -25,6 +25,8 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
   const [stageStatus, setStageStatus] = useState(currentStageData.status || 'pending');
   const [stageAssignee, setStageAssignee] = useState(currentStageData.assignee || '');
   const [stageDueDate, setStageDueDate] = useState(currentStageData.due_date || '');
+  const [stageStartDate, setStageStartDate] = useState(currentStageData.start_date || '');
+  const [stageDuration, setStageDuration] = useState(currentStageData.duration_days || '');
   const [stageNotes, setStageNotes] = useState(currentStageData.notes || '');
   const [newAttachmentName, setNewAttachmentName] = useState('');
   const [newAttachmentUrl, setNewAttachmentUrl] = useState('');
@@ -277,13 +279,24 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
           }
         }
 
+        // Auto-calculate duration if both start and due dates are set
+        let computedDuration = stageDuration;
+        if (stageStartDate && stageDueDate) {
+          const start = new Date(stageStartDate);
+          const end = new Date(stageDueDate);
+          const diffMs = end.getTime() - start.getTime();
+          computedDuration = Math.max(0, Math.round(diffMs / (1000 * 3600 * 24)));
+        }
+
         const updatedStages = {
           ...job.stages,
           [selectedStageId]: {
             ...job.stages[selectedStageId],
             status: stageStatus,
             assignee: stageAssignee,
+            start_date: stageStartDate,
             due_date: stageDueDate,
+            duration_days: computedDuration || null,
             notes: stageNotes,
             completed_at: stageStatus === 'completed' ? new Date().toISOString() : job.stages[selectedStageId]?.completed_at
           }
@@ -577,33 +590,126 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Status Picker */}
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-700">สถานะขั้นตอน</label>
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-xs font-semibold text-slate-700">สถานะขั้นตอน (Status)</label>
                       <select
                         value={stageStatus}
                         onChange={(e) => setStageStatus(e.target.value)}
                         disabled={!canEditCurrentStage}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-100 disabled:text-slate-500"
                       >
-                        <option value="pending">⏳ Pending (รอสเตจก่อนหน้า)</option>
-                        <option value="in_progress">🔵 In Progress (กำลังดำเนินงาน)</option>
-                        <option value="completed">✅ Completed (เสร็จสิ้น)</option>
-                        <option value="delayed">⚠️ Delayed (ล่าช้ากว่ากำหนด)</option>
+                        <option value="pending">In Queue / Pending (รอเริ่มงาน)</option>
+                        <option value="in_progress">In Progress (กำลังดำเนินงาน)</option>
+                        <option value="completed">Completed (เสร็จสิ้น)</option>
+                        <option value="delayed">Delayed (ล่าช้ากว่ากำหนด)</option>
                       </select>
                     </div>
+                  </div>
 
-                    {/* Stage Target Due Date */}
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-700">กำหนดส่งสเตจนี้</label>
-                      <input
-                        type="date"
-                        value={stageDueDate}
-                        onChange={(e) => setStageDueDate(e.target.value)}
-                        disabled={!canEditCurrentStage}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-100 font-medium"
-                      />
-                    </div>
+                  {/* ── Schedule Block ── */}
+                  {(() => {
+                    // Calculate elapsed % between start → today → due
+                    let elapsedPct = 0;
+                    let durationDays = currentStageData.duration_days || '';
+                    if (stageStartDate && stageDueDate) {
+                      const start = new Date(stageStartDate);
+                      const end = new Date(stageDueDate);
+                      const today = new Date();
+                      const totalMs = end - start;
+                      const elapsedMs = today - start;
+                      durationDays = Math.max(0, Math.round(totalMs / (1000 * 3600 * 24)));
+                      elapsedPct = totalMs > 0 ? Math.min(100, Math.max(0, Math.round((elapsedMs / totalMs) * 100))) : 0;
+                    }
+                    const isOverSchedule = stageDueDate && new Date() > new Date(stageDueDate) && stageStatus !== 'completed';
 
+                    return (
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                          <Clock className="w-4 h-4 text-blue-600" />
+                          <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">กำหนดการทำงาน (Schedule)</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Start Date */}
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-green-600" /> วันเริ่มต้น
+                            </label>
+                            <input
+                              type="date"
+                              value={stageStartDate}
+                              onChange={(e) => setStageStartDate(e.target.value)}
+                              disabled={!canEditCurrentStage}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:ring-2 focus:ring-green-400 outline-none disabled:bg-slate-50 font-medium"
+                            />
+                          </div>
+
+                          {/* End / Due Date */}
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-rose-500" /> วันสิ้นสุด / กำหนดส่ง
+                            </label>
+                            <input
+                              type="date"
+                              value={stageDueDate}
+                              onChange={(e) => setStageDueDate(e.target.value)}
+                              disabled={!canEditCurrentStage}
+                              className={`w-full px-3 py-2 rounded-xl border text-xs focus:ring-2 outline-none font-medium disabled:bg-slate-50 ${
+                                isOverSchedule
+                                  ? 'border-rose-400 bg-rose-50 text-rose-700 focus:ring-rose-400'
+                                  : 'border-slate-200 bg-white focus:ring-blue-500'
+                              }`}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Duration Display */}
+                        {stageStartDate && stageDueDate && (
+                          <div className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
+                            <div className="flex items-center gap-1.5 text-slate-700">
+                              <Clock className="w-3.5 h-3.5 text-blue-500" />
+                              <span className="text-xs font-semibold">ระยะเวลารวม</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-extrabold text-blue-700">{durationDays}</span>
+                              <span className="text-xs text-slate-500 font-medium">วัน</span>
+                              {isOverSchedule && (
+                                <span className="text-[10px] font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3" /> เกินกำหนด!
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Progress Bar */}
+                        {stageStartDate && stageDueDate && (
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[11px] text-slate-500 font-semibold">ความคืบหน้าเวลา</span>
+                              <span className={`text-[11px] font-extrabold ${
+                                isOverSchedule ? 'text-rose-600' : elapsedPct >= 80 ? 'text-amber-600' : 'text-blue-600'
+                              }`}>{elapsedPct}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                              <div
+                                className={`h-2 rounded-full transition-all duration-500 ${
+                                  isOverSchedule ? 'bg-rose-500' : elapsedPct >= 80 ? 'bg-amber-500' : 'bg-blue-500'
+                                }`}
+                                style={{ width: `${Math.min(elapsedPct, 100)}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-slate-400">
+                              <span>{stageStartDate}</span>
+                              <span>{stageDueDate}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Linked Assignee Dropdown Selector */}
                     <div className="space-y-1 sm:col-span-2">
                       <div className="flex items-center justify-between">
