@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   X, Calendar, Clock, CheckCircle2, AlertTriangle, ExternalLink, 
   FileText, Image as ImageIcon, Link as LinkIcon, User, Plus, 
