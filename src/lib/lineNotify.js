@@ -204,6 +204,10 @@ export const createFlexMessageCard = (title, job, stageLabel, type = 'update', e
 
 /**
  * Send Flex Message or Fallback Text Message to Group / Broadcast
+ *
+ * Routing strategy:
+ * - localhost → Vite dev proxy  (/line-api  → https://api.line.me)
+ * - production (Vercel) → /api/line-push serverless function (server-to-server, no CORS)
  */
 export const sendLineFlexOrText = async (flexObj, fallbackText) => {
   const token = LINE_CHANNEL_ACCESS_TOKEN;
@@ -215,38 +219,34 @@ export const sendLineFlexOrText = async (flexObj, fallbackText) => {
   }
   const groupId = typeof rawGroupId === 'string' ? rawGroupId.trim() : '';
 
-  const path = groupId ? '/v2/bot/message/push' : '/v2/bot/message/broadcast';
-  
-  // Use Vite proxy '/line-api' in local dev or CORS proxy on web to bypass browser CORS policy
-  const isLocalDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const baseUrl = isLocalDev ? '/line-api' : 'https://corsproxy.io/?https://api.line.me';
-  const endpoint = `${baseUrl}${path}`;
+  const linePath = groupId ? '/v2/bot/message/push' : '/v2/bot/message/broadcast';
+  const lineBody = groupId
+    ? { to: groupId, messages: [flexObj] }
+    : { messages: [flexObj] };
 
-  const messagesPayload = [flexObj];
-  const body = groupId 
-    ? { to: groupId, messages: messagesPayload }
-    : { messages: messagesPayload };
+  const isLocalDev = typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   try {
-    let response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(body)
-    });
+    let response;
 
-    // Fallback attempt with direct URL or CORS proxy if proxy returned error
-    if (!response.ok && isLocalDev) {
-      const corsProxyEndpoint = `https://corsproxy.io/?https://api.line.me${path}`;
-      response = await fetch(corsProxyEndpoint, {
+    if (isLocalDev) {
+      // In local dev: use Vite proxy (/line-api → https://api.line.me)
+      response = await fetch(`/line-api${linePath}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(lineBody),
+      });
+    } else {
+      // In production (Vercel): call our own serverless /api/line-push
+      // This avoids CORS entirely — the serverless function calls LINE server-to-server
+      response = await fetch('/api/line-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: linePath, body: lineBody }),
       });
     }
 
