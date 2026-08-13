@@ -33,7 +33,7 @@ export const setStoredGroupId = (groupId) => {
 /**
  * Build Professional LINE Flex Message Card
  */
-export const createFlexMessageCard = (title, job, stageLabel, type = 'update', extraText = '') => {
+export const createFlexMessageCard = (title, job, stageLabel, type = 'update', extraText = '', assignee = '') => {
   // Determine header color by type
   let headerBgColor = '#059669'; // Green (update)
   if (type === 'create') headerBgColor = '#2563eb'; // Blue (create)
@@ -183,7 +183,30 @@ export const createFlexMessageCard = (title, job, stageLabel, type = 'update', e
                 align: 'end'
               }
             ]
-          }
+          },
+          ...(assignee ? [{
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: 'ผู้รับผิดชอบ',
+                size: 'xs',
+                color: '#64748b',
+                flex: 0
+              },
+              {
+                type: 'text',
+                text: assignee,
+                size: 'xs',
+                color: '#7c3aed',
+                weight: 'bold',
+                align: 'end',
+                wrap: true
+              }
+            ]
+          }] : [])
         ]
       },
       footer: {
@@ -281,8 +304,12 @@ export const notifyJobStatusUpdated = async (job, stageLabel, updatedBy) => {
   const stageObj = WORKFLOW_STAGES.find(s => s.id === stageLabel || s.id === job.current_stage);
   const displayStageName = stageObj ? stageObj.label : (stageLabel || 'อัปเดตงาน');
 
-  const flexMessage = createFlexMessageCard('🔄 อัปเดตสถานะ & กำหนดส่ง', job, displayStageName, 'update');
-  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${displayStageName}\n📅 กำหนดส่ง: ${job.due_date || job.on_sale_date || 'ตามผังเวลา'}\n👤 ผู้ดูแล: ${updatedBy}`;
+  // Get the assignee from the current stage's Process data
+  const currentStageId = stageObj?.id || job.current_stage;
+  const stageAssignee = job.stages?.[currentStageId]?.assignee || updatedBy || '';
+
+  const flexMessage = createFlexMessageCard('🔄 อัปเดตสถานะ & กำหนดส่ง', job, displayStageName, 'update', '', stageAssignee);
+  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${displayStageName}\n📅 กำหนดส่ง: ${job.stages?.on_sale?.due_date || job.on_sale_date || job.due_date || 'ยังไม่กำหนด'}\n👤 ผู้รับผิดชอบ: ${stageAssignee}`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 
