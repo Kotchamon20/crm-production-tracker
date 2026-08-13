@@ -9,6 +9,7 @@ export const LINE_CHANNEL_SECRET =
   'd908f123a63f362a3dc872faf1177d05';
 
 import { fetchAppSettingFromSupabase } from './supabase';
+import { WORKFLOW_STAGES } from '../data/mockData';
 
 export const getStoredGroupId = async () => {
   try {
@@ -276,8 +277,11 @@ export const notifyJobCreated = async (job) => {
  * Send automated alert when a job stage/status is updated
  */
 export const notifyJobStatusUpdated = async (job, stageLabel, updatedBy) => {
-  const flexMessage = createFlexMessageCard('🔄 อัปเดตสถานะการผลิต', job, stageLabel, 'update');
-  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอนล่าสุด: ${stageLabel}\n👤 ผู้ดูแล: ${updatedBy}`;
+  const stageObj = WORKFLOW_STAGES.find(s => s.id === stageLabel || s.id === job.current_stage);
+  const displayStageName = stageObj ? stageObj.label : (stageLabel || 'อัปเดตงาน');
+
+  const flexMessage = createFlexMessageCard('🔄 อัปเดตสถานะ & กำหนดส่ง', job, displayStageName, 'update');
+  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${displayStageName}\n📅 กำหนดส่ง: ${job.due_date || job.on_sale_date || 'ตามผังเวลา'}\n👤 ผู้ดูแล: ${updatedBy}`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 

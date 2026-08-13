@@ -1092,8 +1092,8 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-amber-600 mb-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center font-bold text-lg">
-                ⚠️
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
               <h3 className="font-bold text-base text-slate-900">{confirmSaveModal.title}</h3>
             </div>
@@ -1104,9 +1104,10 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
               <button
                 type="button"
                 onClick={() => setConfirmSaveModal({ isOpen: false, title: '', message: '', onConfirm: null })}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
               >
-                ❌ ยกเลิก
+                <X className="w-4 h-4 text-slate-500" />
+                ยกเลิก
               </button>
               <button
                 type="button"
@@ -1115,8 +1116,8 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
                 }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <Check className="w-4 h-4" />
-                ✅ ยืนยันบันทึกข้อมูล
+                <Check className="w-4 h-4 text-white" />
+                ยืนยันบันทึกข้อมูล
               </button>
             </div>
           </div>
