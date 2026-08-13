@@ -6,10 +6,17 @@ import {
 } from 'lucide-react';
 import { WORKFLOW_STAGES, DEPARTMENTS } from '../data/mockData';
 
-export default function JobDetailModal({ job, userRole, onClose, onUpdateJob }) {
+export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, onDeleteJob }) {
   const [activeTab, setActiveTab] = useState('stages'); // 'stages' | 'specifications' | 'audit_log'
   const [selectedStageId, setSelectedStageId] = useState(job.current_stage || 'start');
   
+  // Job Info Edit State
+  const [isEditingJobInfo, setIsEditingJobInfo] = useState(false);
+  const [editProjectName, setEditProjectName] = useState(job.project_name || '');
+  const [editQuantity, setEditQuantity] = useState(job.specifications?.quantity || 1000);
+  const [editDueDate, setEditDueDate] = useState(job.due_date || '');
+  const [editOnSaleDate, setEditOnSaleDate] = useState(job.on_sale_date || '');
+
   // Local state for editing selected stage
   const currentStageData = job.stages[selectedStageId] || {};
   const [stageStatus, setStageStatus] = useState(currentStageData.status || 'pending');
@@ -20,6 +27,31 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob }) 
   const [newAttachmentUrl, setNewAttachmentUrl] = useState('');
   const [newAttachmentType, setNewAttachmentType] = useState('link'); // 'link' | 'file' | 'image'
   const [isSavedAlert, setIsSavedAlert] = useState(false);
+
+  const handleSaveJobInfoEdit = () => {
+    onUpdateJob({
+      ...job,
+      project_name: editProjectName,
+      due_date: editDueDate,
+      on_sale_date: editOnSaleDate,
+      specifications: {
+        ...job.specifications,
+        quantity: Number(editQuantity) || 0
+      },
+      audit_logs: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          user: getRoleUserName(userRole),
+          action: `แก้ไขรายละเอียดโครงการ: ชื่อเป็น "${editProjectName}", จำนวน ${editQuantity} ชิ้น`
+        },
+        ...(job.audit_logs || [])
+      ]
+    });
+    setIsEditingJobInfo(false);
+    setIsSavedAlert(true);
+    setTimeout(() => setIsSavedAlert(false), 3000);
+  };
 
   // Dynamic team responsibles state linked to DEPARTMENTS
   const initialResponsibles = Array.isArray(job.responsibles) ? job.responsibles : [
@@ -300,13 +332,87 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob }) 
             </div>
           </div>
 
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors relative z-10"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 relative z-10">
+            {/* Edit Job Button */}
+            <button
+              onClick={() => setIsEditingJobInfo(!isEditingJobInfo)}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300/80 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Settings className="w-3.5 h-3.5 text-slate-600" />
+              {isEditingJobInfo ? 'ปิดแก้ไข' : 'แก้ไขโครงการ'}
+            </button>
+
+            {/* Delete Job Button */}
+            {onDeleteJob && (
+              <button
+                onClick={() => {
+                  onDeleteJob(job.id);
+                }}
+                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                title="ลบโครงการนี้"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                ลบโครงการ
+              </button>
+            )}
+
+            <button 
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Inline Edit Job Details Form Banner */}
+        {isEditingJobInfo && (
+          <div className="bg-blue-50/70 border-b border-blue-200 p-4 shrink-0 flex flex-wrap items-end gap-3 animate-in fade-in duration-200">
+            <div className="flex-1 min-w-[220px]">
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">ชื่อโครงการผลิต</label>
+              <input 
+                type="text" 
+                value={editProjectName}
+                onChange={(e) => setEditProjectName(e.target.value)}
+                className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="w-36">
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">จำนวนผลิต (ชิ้น)</label>
+              <input 
+                type="number" 
+                value={editQuantity}
+                onChange={(e) => setEditQuantity(Number(e.target.value))}
+                className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="w-36">
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">ส่งมอบผลิต</label>
+              <input 
+                type="date" 
+                value={editDueDate}
+                onChange={(e) => setEditDueDate(e.target.value)}
+                className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="w-36">
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">วันวางขาย</label>
+              <input 
+                type="date" 
+                value={editOnSaleDate}
+                onChange={(e) => setEditOnSaleDate(e.target.value)}
+                className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <button
+              onClick={handleSaveJobInfoEdit}
+              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Save className="w-3.5 h-3.5" />
+              บันทึกการแก้ไข
+            </button>
+          </div>
+        )}
 
         {/* Clean Modal Sub-Navigation Tabs */}
         <div className="flex border-b border-slate-200/80 bg-slate-50/70 px-6 pt-1 shrink-0">

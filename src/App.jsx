@@ -17,6 +17,7 @@ import {
   isSupabaseConfigured, 
   fetchJobsFromSupabase, 
   saveJobToSupabase, 
+  deleteJobFromSupabase,
   fetchNotificationsFromSupabase, 
   saveNotificationToSupabase,
   markNotificationReadInSupabase,
@@ -141,6 +142,20 @@ function App() {
     notifyJobStatusUpdated(updatedJob, updatedJob.current_stage || 'อัปเดตงาน', userRole).catch(() => {});
   };
 
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm('⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบโครงการนี้ออกจากระบบ?')) return;
+    const updatedJobs = jobs.filter(j => j.id !== jobId);
+    setJobs(updatedJobs);
+    if (selectedJobId === jobId) {
+      setSelectedJobId(null);
+    }
+    try {
+      await deleteJobFromSupabase(jobId);
+    } catch (e) {
+      console.warn('Could not delete job from Supabase:', e);
+    }
+  };
+
   const handleMarkAsRead = (notifId) => {
     setNotifications(notifications.map(n => n.id === notifId ? { ...n, read: true } : n));
     markNotificationReadInSupabase(notifId).catch(() => {});
@@ -154,22 +169,24 @@ function App() {
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-blue-100 antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased flex flex-col">
       
-      {/* Top Header Navigation Bar - Full Width Clean Design */}
-      <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
+      {/* Edge to Edge Header Navigation */}
+      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
         <div className="w-full px-4 sm:px-6 lg:px-10">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex items-center justify-between h-16">
             
-            {/* Logo & Main Navigation Tabs */}
+            {/* Left Brand & Tabs Navigation */}
             <div className="flex items-center gap-8">
               <div 
                 onClick={() => setActiveTab('dashboard')} 
                 className="flex items-center gap-3 cursor-pointer group"
               >
-                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-lg shadow-sm group-hover:bg-blue-600 transition-colors">
-                  N
-                </div>
+                <img 
+                  src="/nitan-logo.png" 
+                  alt="Nitan Logo" 
+                  className="w-10 h-10 rounded-xl object-contain bg-black p-1 shadow-sm border border-slate-800 group-hover:border-blue-600 transition-all" 
+                />
                 <div className="flex flex-col">
                   <span className="font-bold text-lg tracking-tight text-slate-900 leading-none">
                     Nitan<span className="text-blue-600">Tracker</span>
@@ -190,8 +207,8 @@ function App() {
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                   }`}
                 >
-                  <LayoutDashboard className="w-4 h-4 mr-1.5" />
-                  ภาพรวม (Dashboard Matrix)
+                  <Kanban className="w-4 h-4 mr-1.5" />
+                  เมทริกซ์ติดตามงาน (Matrix)
                 </button>
 
                 <button
@@ -202,8 +219,8 @@ function App() {
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                   }`}
                 >
-                  <Clock className="w-4 h-4 mr-1.5" />
-                  ผังเวลา (Gantt Chart)
+                  <Calendar className="w-4 h-4 mr-1.5" />
+                  ผังเวลาผลิต (Gantt Chart)
                 </button>
 
                 <button
@@ -273,6 +290,8 @@ function App() {
             userRole={userRole}
             onSelectJob={(jobId) => setSelectedJobId(jobId)} 
             onCreateNewClick={() => setActiveTab('new')}
+            onDeleteJob={handleDeleteJob}
+            onUpdateJob={handleUpdateJob}
           />
         )}
 
@@ -304,6 +323,7 @@ function App() {
           userRole={userRole}
           onClose={() => setSelectedJobId(null)}
           onUpdateJob={handleUpdateJob}
+          onDeleteJob={handleDeleteJob}
         />
       )}
 

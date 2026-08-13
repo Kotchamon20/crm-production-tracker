@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { 
   Search, Filter, AlertTriangle, CheckCircle2, Clock, ChevronRight, 
-  ExternalLink, Layers, PlusCircle, Paperclip, Eye, AlertCircle
+  ExternalLink, Layers, PlusCircle, Paperclip, Eye, AlertCircle, Trash2, Edit
 } from 'lucide-react';
 import { WORKFLOW_STAGES } from '../data/mockData';
 
-export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClick }) {
+export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClick, onDeleteJob }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStageFilter, setSelectedStageFilter] = useState('all');
   const [showOnlyDelayed, setShowOnlyDelayed] = useState(false);
@@ -227,12 +227,27 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
                             <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-700">
                               {job.specifications?.quantity?.toLocaleString()} ชิ้น
                             </span>
-                            <button
-                              onClick={() => onSelectJob(job.id)}
-                              className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline"
-                            >
-                              <Eye className="w-3 h-3" /> ดู & อัปเดต
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => onSelectJob(job.id)}
+                                className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline text-[11px]"
+                                title="ดูรายละเอียดและแก้ไขโครงการ"
+                              >
+                                <Edit className="w-3 h-3" /> ดู & แก้ไข
+                              </button>
+                              {onDeleteJob && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteJob(job.id);
+                                  }}
+                                  className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors"
+                                  title="ลบโครงการนี้"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>

@@ -100,6 +100,25 @@ export const saveJobToSupabase = async (job) => {
 };
 
 /**
+ * Delete a job from Supabase by ID
+ */
+export const deleteJobFromSupabase = async (jobId) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase Anon Key is not configured');
+
+  const { error } = await client
+    .from('jobs')
+    .delete()
+    .eq('id', jobId);
+
+  if (error) {
+    console.error('Supabase deleteJob error:', error);
+    throw error;
+  }
+  return true;
+};
+
+/**
  * Fetch notifications from Supabase
  */
 export const fetchNotificationsFromSupabase = async () => {
