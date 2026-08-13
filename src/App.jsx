@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  LayoutDashboard, PlusCircle, BarChart3, Clock, Bell, 
+  LayoutDashboard, PlusCircle, BarChart3, Clock, Bell, Kanban, Calendar,
   Layers, Shield, Sparkles, CheckCircle2, AlertTriangle, FileSpreadsheet, MessageSquare, Database
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
