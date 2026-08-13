@@ -335,6 +335,9 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
   // Check if current user role has permission to edit selected stage (Production has permission for on_sale)
   const canEditCurrentStage = userRole === 'admin' || stageDefinition?.role === userRole || (userRole === 'production' && ['start', 'production_order', 'production', 'qc', 'on_sale'].includes(selectedStageId));
 
+  const stageCompleteDueDate = job.stages?.complete?.due_date;
+  const stageOnSaleDueDate = job.stages?.on_sale?.due_date;
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       {/* Horizontal Landscape Modal Container */}
@@ -349,17 +352,17 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
               <span className="bg-blue-100/80 text-blue-800 text-xs font-mono px-3 py-0.5 rounded-lg font-bold border border-blue-200/80">
                 {job.id}
               </span>
-              {(job.start_date || job.due_date) && (
+              {(job.start_date || stageCompleteDueDate) && (
                 <span className="text-slate-500 text-xs flex items-center gap-1.5 ml-1 font-medium">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   {job.start_date && <>รับงาน: {job.start_date}</>}
-                  {job.start_date && job.due_date && <span className="text-slate-300 mx-0.5">|</span>}
-                  {job.due_date && <>ส่งมอบผลิต: <strong className="text-amber-700 font-bold">{job.due_date}</strong></>}
+                  {job.start_date && stageCompleteDueDate && <span className="text-slate-300 mx-0.5">|</span>}
+                  {stageCompleteDueDate && <>ส่งมอบผลิต: <strong className="text-amber-700 font-bold">{stageCompleteDueDate}</strong></>}
                 </span>
               )}
-              {job.on_sale_date && (
+              {stageOnSaleDueDate && (
                 <span className="bg-amber-50 text-amber-800 border border-amber-200/80 text-xs px-2.5 py-0.5 rounded-md font-bold flex items-center gap-1">
-                  <Megaphone className="w-3 h-3 text-amber-600" /> วันวางขาย (Production): {job.on_sale_date}
+                  <Megaphone className="w-3 h-3 text-amber-600" /> วันวางขาย (Production): {stageOnSaleDueDate}
                 </span>
               )}
             </div>
