@@ -60,15 +60,15 @@ function App() {
         fetchNotificationsFromSupabase()
       ]);
 
-      if (remoteJobs && remoteJobs.length > 0) {
+      if (Array.isArray(remoteJobs)) {
         setJobs(remoteJobs);
       }
-      if (remoteNotifs && remoteNotifs.length > 0) {
+      if (Array.isArray(remoteNotifs)) {
         setNotifications(remoteNotifs);
       }
       setIsDbConnected(true);
     } catch (err) {
-      console.warn('Supabase DB load failed, using local state:', err);
+      console.warn('Supabase DB load failed:', err);
       setIsDbConnected(false);
     }
   }, []);
@@ -253,6 +253,16 @@ function App() {
 
             {/* Right Tools: Test LINE Button, Role Switcher & Notifications */}
             <div className="flex items-center gap-2.5">
+              {isDbConnected && (
+                <div 
+                  className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200/80 rounded-xl text-xs font-bold"
+                  title="เชื่อมต่อและดึงข้อมูลจริงเรียลไทม์จาก Supabase Database"
+                >
+                  <Database className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+                  ข้อมูลจริง Supabase DB
+                </div>
+              )}
+
               <button
                 onClick={async () => {
                   const success = await sendTestLineNotification();
