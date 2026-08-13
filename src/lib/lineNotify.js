@@ -208,7 +208,12 @@ export const sendLineFlexOrText = async (flexObj, fallbackText) => {
   const token = LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) return false;
 
-  const groupId = getStoredGroupId();
+  let rawGroupId = await getStoredGroupId();
+  if (typeof rawGroupId === 'object' && rawGroupId !== null) {
+    rawGroupId = rawGroupId.groupId || '';
+  }
+  const groupId = typeof rawGroupId === 'string' ? rawGroupId.trim() : '';
+
   const path = groupId ? '/v2/bot/message/push' : '/v2/bot/message/broadcast';
   
   // Use Vite proxy '/line-api' in local dev or CORS proxy on web to bypass browser CORS policy
