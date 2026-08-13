@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, PlusCircle, BarChart3, Clock, Bell, Kanban, Calendar,
-  Layers, Shield, Sparkles, CheckCircle2, AlertTriangle, FileSpreadsheet, MessageSquare, Database
+  Layers, Shield, Sparkles, CheckCircle2, AlertTriangle, FileSpreadsheet, MessageSquare, Database, RefreshCw
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import JobForm from './components/JobForm';
@@ -253,6 +253,15 @@ function App() {
 
             {/* Right Tools: Test LINE Button, Role Switcher & Notifications */}
             <div className="flex items-center gap-2.5">
+              <button
+                onClick={loadDataFromSupabase}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                title="กดเพื่อดึงข้อมูลจริงล่าสุดจาก Supabase Database ทันที"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                รีเฟรชข้อมูล DB
+              </button>
+
               {isDbConnected && (
                 <div 
                   className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200/80 rounded-xl text-xs font-bold"

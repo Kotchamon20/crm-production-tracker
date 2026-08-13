@@ -1,11 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Default Supabase project URL provided by user
+// Default Supabase project URL & Anon Key
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://vvscpbgwgmnawwkymeqg.supabase.co';
+export const DEFAULT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2c2NwYmd3Z21uYXd3a3ltZXFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc4NTgsImV4cCI6MjEwMjE4Mzg1OH0.CNQhHl0VqmkgaxgKANbLIhBSNWc3PVQY4t4h-GA0P00';
 
-// Get Anon Key from Env or LocalStorage for dynamic user key input
+// Get Anon Key from Env, LocalStorage, or Default Fallback
 export const getStoredAnonKey = () => {
-  return import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('niitan_supabase_anon_key') || '';
+  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (envKey && envKey.trim()) return envKey.trim();
+  const storedKey = localStorage.getItem('niitan_supabase_anon_key');
+  if (storedKey && storedKey.trim()) return storedKey.trim();
+  return DEFAULT_ANON_KEY;
 };
 
 export const setStoredAnonKey = (key) => {
