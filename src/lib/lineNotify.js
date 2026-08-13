@@ -241,13 +241,26 @@ export const createFlexMessageCard = (title, job, stageLabel, type = 'update', e
       footer: {
         type: 'box',
         layout: 'vertical',
+        spacing: 'sm',
         contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            height: 'sm',
+            color: '#2563eb',
+            action: {
+              type: 'uri',
+              label: 'เปิดดูในระบบ',
+              uri: 'https://crm-production-tracker.vercel.app/'
+            }
+          },
           {
             type: 'text',
             text: '🤖 Nitan Production Tracker Alert',
             size: 'xxs',
             color: '#94a3b8',
-            align: 'center'
+            align: 'center',
+            margin: 'sm'
           }
         ]
       }
@@ -322,7 +335,7 @@ export const sendLineFlexOrText = async (flexObj, fallbackText) => {
  */
 export const notifyJobCreated = async (job) => {
   const flexMessage = createFlexMessageCard('✨ เปิดโครงการใหม่', job, job.current_stage || 'start', 'create');
-  const fallbackText = `✨ [Nitan Tracker - เปิดโครงการใหม่]\n📌 ${job.id}: ${job.project_name}\n🚀 สถานะ: ${job.current_stage || 'start'}`;
+  const fallbackText = `✨ [Nitan Tracker - เปิดโครงการใหม่]\n📌 ${job.id}: ${job.project_name}\n🚀 สถานะ: ${job.current_stage || 'start'}\n🔗 เปิดดูในระบบ: https://crm-production-tracker.vercel.app/`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 
@@ -341,7 +354,7 @@ export const notifyJobStatusUpdated = async (job, stageLabel, updatedBy) => {
   const stageDueDate = currentStageData.due_date || '';
 
   const flexMessage = createFlexMessageCard('🔄 อัปเดตสถานะ & กำหนดส่ง', job, displayStageName, 'update', '', stageAssignee, stageStatus, stageDueDate);
-  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${displayStageName}\n📊 สถานะ: ${stageStatus}\n📅 กำหนดส่ง: ${stageDueDate || 'ยังไม่กำหนด'}\n👤 ผู้รับผิดชอบ: ${stageAssignee}`;
+  const fallbackText = `🔄 [Nitan Tracker - อัปเดตสถานะงาน]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${displayStageName}\n📊 สถานะ: ${stageStatus}\n📅 กำหนดส่ง: ${stageDueDate || 'ยังไม่กำหนด'}\n👤 ผู้รับผิดชอบ: ${stageAssignee}\n🔗 เปิดดูในระบบ: https://crm-production-tracker.vercel.app/`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 
@@ -352,7 +365,7 @@ export const notifyJobOverdue = async (job, daysOverdue = 1) => {
   const title = `⚠️ งานเลยกำหนดส่งมอบ (${daysOverdue} วัน)`;
   const extraText = `🚨 งานนี้เลยกำหนดส่งมอบแล้ว ${daysOverdue} วัน โปรดเร่งติดตาม!`;
   const flexMessage = createFlexMessageCard(title, job, job.current_stage || 'in_progress', 'overdue', extraText);
-  const fallbackText = `⚠️ [Nitan Tracker - เลยกำหนดส่งมอบ]\n📌 ${job.id}: ${job.project_name}\n🚨 เลยกำหนดส่งมอบแล้ว ${daysOverdue} วัน`;
+  const fallbackText = `⚠️ [Nitan Tracker - เลยกำหนดส่งมอบ]\n📌 ${job.id}: ${job.project_name}\n🚨 เลยกำหนดส่งมอบแล้ว ${daysOverdue} วัน\n🔗 เปิดดูในระบบ: https://crm-production-tracker.vercel.app/`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 
@@ -363,7 +376,7 @@ export const notifyJobUpcomingDue = async (job) => {
   const title = `⏰ เตือนส่งมอบล่วงหน้า 1 วัน`;
   const extraText = `📢 ถึงกำหนดส่งมอบในวันพรุ่งนี้ (${job.due_date || job.on_sale_date})`;
   const flexMessage = createFlexMessageCard(title, job, job.current_stage || 'in_progress', 'reminder', extraText);
-  const fallbackText = `⏰ [Nitan Tracker - เตือนส่งมอบล่วงหน้า 1 วัน]\n📌 ${job.id}: ${job.project_name}\n📢 ถึงกำหนดส่งมอบในวันพรุ่งนี้!`;
+  const fallbackText = `⏰ [Nitan Tracker - เตือนส่งมอบล่วงหน้า 1 วัน]\n📌 ${job.id}: ${job.project_name}\n📢 ถึงกำหนดส่งมอบในวันพรุ่งนี้!\n🔗 เปิดดูในระบบ: https://crm-production-tracker.vercel.app/`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 
