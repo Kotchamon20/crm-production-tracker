@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, Calendar, Clock, CheckCircle2, AlertTriangle, ExternalLink, 
   FileText, Image as ImageIcon, Link as LinkIcon, User, Plus, 
@@ -32,6 +32,17 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
   const [newAttachmentUrl, setNewAttachmentUrl] = useState('');
   const [newAttachmentType, setNewAttachmentType] = useState('link'); // 'link' | 'file' | 'image'
   const [isSavedAlert, setIsSavedAlert] = useState(false);
+
+  // Reset stage form fields whenever the selected stage tab changes
+  useEffect(() => {
+    const data = job.stages[selectedStageId] || {};
+    setStageStatus(data.status || 'pending');
+    setStageAssignee(data.assignee || '');
+    setStageDueDate(data.due_date || '');         // empty string = blank date field
+    setStageStartDate(data.start_date || '');     // empty string = blank date field
+    setStageDuration(data.duration_days || '');
+    setStageNotes(data.notes || '');
+  }, [selectedStageId, job.stages]);
 
   const handleSaveJobInfoEdit = () => {
     setConfirmSaveModal({
