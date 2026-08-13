@@ -352,6 +352,20 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
           </div>
 
           <div className="flex items-center gap-2 relative z-10">
+            {/* Single Unified Files & Links Button */}
+            <button
+              onClick={() => setActiveTab('all_attachments')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                activeTab === 'all_attachments'
+                  ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                  : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200/80'
+              }`}
+              title="ดูและแนบไฟล์ตรวจสอบของโครงการนี้ทั้งหมด"
+            >
+              <Paperclip className="w-3.5 h-3.5" />
+              ลิงก์ & ไฟล์ตรวจสอบ ({WORKFLOW_STAGES.reduce((acc, st) => acc + (job.stages[st.id]?.attachments?.length || 0), 0)})
+            </button>
+
             {/* Edit Job Button */}
             <button
               onClick={() => setIsEditingJobInfo(!isEditingJobInfo)}
