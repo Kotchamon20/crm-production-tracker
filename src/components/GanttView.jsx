@@ -46,8 +46,8 @@ export default function GanttView({ jobs, onSelectJob }) {
                 </th>
                 {WORKFLOW_STAGES.map((st) => (
                   <th key={st.id} className="py-4 px-3 font-semibold text-center w-36 border-r border-slate-100 last:border-r-0">
-                    <div className="text-slate-900">{st.shortLabel}</div>
-                    <span className="text-[10px] text-slate-400 font-normal">~{st.defaultDays} วัน</span>
+                    <div className="text-slate-900 font-bold">{st.shortLabel}</div>
+                    <span className="text-[10px] text-slate-400 font-normal">({st.role})</span>
                   </th>
                 ))}
               </tr>
