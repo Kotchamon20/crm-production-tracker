@@ -614,9 +614,9 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
                       durationDays = Math.max(0, Math.round(totalMs / (1000 * 3600 * 24)));
                       elapsedPct = totalMs > 0 ? Math.min(100, Math.max(0, Math.round((elapsedMs / totalMs) * 100))) : 0;
                     }
-                    // "Overdue" only when user explicitly set status to 'delayed'
-                    // (not auto-triggered by date comparison - due date is just a planning date)
-                    const isOverSchedule = stageStatus === 'delayed';
+                    // "Overdue" when status is explicitly 'delayed' OR due date has passed and not completed
+                    const isOverSchedule = stageStatus === 'delayed' || 
+                      (stageDueDate && new Date() > new Date(stageDueDate) && stageStatus !== 'completed');
 
                     return (
                       <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
