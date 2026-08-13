@@ -1,15 +1,17 @@
-import { useState } from 'react';
 import { 
   X, Calendar, Clock, CheckCircle2, AlertTriangle, ExternalLink, 
   FileText, Image as ImageIcon, Link as LinkIcon, User, Plus, 
-  History, Settings, ChevronRight, Upload, Save, Check, Shield, Trash2, Megaphone, Building2
+  History, Settings, ChevronRight, Upload, Save, Check, Shield, Trash2, Megaphone, Building2, Paperclip
 } from 'lucide-react';
 import { WORKFLOW_STAGES, DEPARTMENTS } from '../data/mockData';
 
 export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, onDeleteJob }) {
-  const [activeTab, setActiveTab] = useState('stages'); // 'stages' | 'specifications' | 'audit_log'
+  const [activeTab, setActiveTab] = useState('stages'); // 'stages' | 'all_attachments' | 'specifications' | 'audit_log'
   const [selectedStageId, setSelectedStageId] = useState(job.current_stage || 'start');
   
+  // Confirmation Modal State
+  const [confirmSaveModal, setConfirmSaveModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+
   // Job Info Edit State
   const [isEditingJobInfo, setIsEditingJobInfo] = useState(false);
   const [editProjectName, setEditProjectName] = useState(job.project_name || '');
@@ -29,28 +31,36 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
   const [isSavedAlert, setIsSavedAlert] = useState(false);
 
   const handleSaveJobInfoEdit = () => {
-    onUpdateJob({
-      ...job,
-      project_name: editProjectName,
-      due_date: editDueDate,
-      on_sale_date: editOnSaleDate,
-      specifications: {
-        ...job.specifications,
-        quantity: Number(editQuantity) || 0
-      },
-      audit_logs: [
-        {
-          id: `log-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          user: getRoleUserName(userRole),
-          action: `แก้ไขรายละเอียดโครงการ: ชื่อเป็น "${editProjectName}", จำนวน ${editQuantity} ชิ้น`
-        },
-        ...(job.audit_logs || [])
-      ]
+    setConfirmSaveModal({
+      isOpen: true,
+      title: '⚠️ ยืนยันการบันทึกแก้ไขข้อมูลโครงการ',
+      message: `คุณยืนยันที่จะบันทึกการปรับปรุงข้อมูลโครงการ "${editProjectName}" ใช่หรือไม่?`,
+      onConfirm: () => {
+        onUpdateJob({
+          ...job,
+          project_name: editProjectName,
+          due_date: editDueDate,
+          on_sale_date: editOnSaleDate,
+          specifications: {
+            ...job.specifications,
+            quantity: Number(editQuantity) || 0
+          },
+          audit_logs: [
+            {
+              id: `log-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              user: getRoleUserName(userRole),
+              action: `แก้ไขรายละเอียดโครงการ: ชื่อเป็น "${editProjectName}", จำนวน ${editQuantity} ชิ้น`
+            },
+            ...(job.audit_logs || [])
+          ]
+        });
+        setIsEditingJobInfo(false);
+        setIsSavedAlert(true);
+        setConfirmSaveModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        setTimeout(() => setIsSavedAlert(false), 3000);
+      }
     });
-    setIsEditingJobInfo(false);
-    setIsSavedAlert(true);
-    setTimeout(() => setIsSavedAlert(false), 3000);
   };
 
   // Dynamic team responsibles state linked to DEPARTMENTS
@@ -246,52 +256,60 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
 
   const handleSaveStageUpdate = () => {
     const stageInfo = WORKFLOW_STAGES.find(s => s.id === selectedStageId);
-    const prevStatus = job.stages[selectedStageId]?.status;
-    
-    // Auto-update current_stage of the job if completing
-    let updatedCurrentStage = job.current_stage;
-    if (stageStatus === 'completed') {
-      const currentIndex = WORKFLOW_STAGES.findIndex(s => s.id === selectedStageId);
-      if (currentIndex < WORKFLOW_STAGES.length - 1) {
-        updatedCurrentStage = WORKFLOW_STAGES[currentIndex + 1].id;
-        // set next stage to in_progress if it was pending
-        if (job.stages[updatedCurrentStage]?.status === 'pending') {
-          job.stages[updatedCurrentStage].status = 'in_progress';
+    setConfirmSaveModal({
+      isOpen: true,
+      title: '⚠️ ยืนยันการบันทึกข้อมูลสเตจ',
+      message: `คุณยืนยันที่จะบันทึกการอัปเดตขั้นตอน "${stageInfo?.shortLabel}" ใช่หรือไม่?`,
+      onConfirm: () => {
+        const prevStatus = job.stages[selectedStageId]?.status;
+        
+        // Auto-update current_stage of the job if completing
+        let updatedCurrentStage = job.current_stage;
+        if (stageStatus === 'completed') {
+          const currentIndex = WORKFLOW_STAGES.findIndex(s => s.id === selectedStageId);
+          if (currentIndex < WORKFLOW_STAGES.length - 1) {
+            updatedCurrentStage = WORKFLOW_STAGES[currentIndex + 1].id;
+            // set next stage to in_progress if it was pending
+            if (job.stages[updatedCurrentStage]?.status === 'pending') {
+              job.stages[updatedCurrentStage].status = 'in_progress';
+            }
+          }
         }
+
+        const updatedStages = {
+          ...job.stages,
+          [selectedStageId]: {
+            ...job.stages[selectedStageId],
+            status: stageStatus,
+            assignee: stageAssignee,
+            due_date: stageDueDate,
+            notes: stageNotes,
+            completed_at: stageStatus === 'completed' ? new Date().toISOString() : job.stages[selectedStageId]?.completed_at
+          }
+        };
+
+        const actionText = `อัปเดตขั้นตอน ${stageInfo?.shortLabel}: สถานะ "${stageStatus}" ${stageStatus !== prevStatus ? `(เดิม: ${prevStatus})` : ''}`;
+
+        onUpdateJob({
+          ...job,
+          current_stage: updatedCurrentStage,
+          stages: updatedStages,
+          audit_logs: [
+            {
+              id: `log-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              user: getRoleUserName(userRole),
+              action: actionText
+            },
+            ...job.audit_logs
+          ]
+        });
+
+        setIsSavedAlert(true);
+        setConfirmSaveModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        setTimeout(() => setIsSavedAlert(false), 3000);
       }
-    }
-
-    const updatedStages = {
-      ...job.stages,
-      [selectedStageId]: {
-        ...job.stages[selectedStageId],
-        status: stageStatus,
-        assignee: stageAssignee,
-        due_date: stageDueDate,
-        notes: stageNotes,
-        completed_at: stageStatus === 'completed' ? new Date().toISOString() : job.stages[selectedStageId]?.completed_at
-      }
-    };
-
-    const actionText = `อัปเดตขั้นตอน ${stageInfo?.shortLabel}: สถานะ "${stageStatus}" ${stageStatus !== prevStatus ? `(เดิม: ${prevStatus})` : ''}`;
-
-    onUpdateJob({
-      ...job,
-      current_stage: updatedCurrentStage,
-      stages: updatedStages,
-      audit_logs: [
-        {
-          id: `log-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          user: getRoleUserName(userRole),
-          action: actionText
-        },
-        ...job.audit_logs
-      ]
     });
-
-    setIsSavedAlert(true);
-    setTimeout(() => setIsSavedAlert(false), 3000);
   };
 
   const getRoleUserName = (role) => {
@@ -426,6 +444,17 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
           >
             <Settings className="w-3.5 h-3.5" />
             ติดตามขั้นตอนการทำงาน (Workflow Stages)
+          </button>
+          <button
+            onClick={() => setActiveTab('all_attachments')}
+            className={`py-3 px-4 font-semibold text-xs transition-all border-b-2 flex items-center gap-2 ${
+              activeTab === 'all_attachments'
+                ? 'border-blue-600 text-blue-600 bg-white shadow-2xs rounded-t-xl'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Paperclip className="w-3.5 h-3.5 text-purple-600" />
+            รวมไฟล์ & ลิงก์ทุกสเตจ ({WORKFLOW_STAGES.reduce((acc, st) => acc + (job.stages[st.id]?.attachments?.length || 0), 0)} รายการ)
           </button>
           <button
             onClick={() => setActiveTab('specifications')}
@@ -911,6 +940,93 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
             </div>
           )}
 
+          {/* TAB: ALL ATTACHMENTS ACROSS ALL STAGES */}
+          {activeTab === 'all_attachments' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <Paperclip className="w-4 h-4 text-purple-600" />
+                    ศูนย์รวมลิงก์และไฟล์ตรวจสอบประจำทุกสเตจ (All Attachments & Links)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    รวบรวมไฟล์แนบ, รูปถ่ายม็อคอัพ, เอกสารอนุมัติ และลิงก์ไดรฟ์จากทั้ง 10 ขั้นตอนการผลิตไว้ในที่เดียว
+                  </p>
+                </div>
+                <span className="bg-purple-50 text-purple-700 border border-purple-200 text-xs px-3 py-1 rounded-full font-bold">
+                  รวม {WORKFLOW_STAGES.reduce((acc, st) => acc + (job.stages[st.id]?.attachments?.length || 0), 0)} รายการ
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[480px] overflow-y-auto pr-1">
+                {WORKFLOW_STAGES.map((st) => {
+                  const stageData = job.stages[st.id] || {};
+                  const files = stageData.attachments || [];
+
+                  return (
+                    <div 
+                      key={st.id} 
+                      className={`p-4 rounded-2xl border transition-all ${
+                        files.length > 0 
+                          ? 'bg-white border-slate-200 shadow-2xs' 
+                          : 'bg-slate-50/50 border-slate-200/60 opacity-75'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                          <h4 className="text-xs font-bold text-slate-800">{st.shortLabel}</h4>
+                          <span className="text-[10px] text-slate-400">({st.label})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedStageId(st.id);
+                            setActiveTab('stages');
+                          }}
+                          className="text-[11px] text-blue-600 hover:text-blue-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                        >
+                          จัดการสเตจนี้ <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {files.length > 0 ? (
+                        <div className="space-y-2">
+                          {files.map((file, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {file.type === 'image' ? (
+                                  <ImageIcon className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                ) : file.type === 'file' ? (
+                                  <FileText className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                ) : (
+                                  <LinkIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                )}
+                                <span className="font-semibold text-slate-800 truncate">{file.name}</span>
+                              </div>
+                              <a
+                                href={file.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center gap-1 font-semibold text-[11px] shrink-0 ml-2"
+                              >
+                                เปิดลิงก์ <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 italic py-2 text-center">
+                          ไม่มีไฟล์แนบในสเตจนี้
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* TAB 3: AUDIT LOG */}
           {activeTab === 'audit_log' && (
             <div className="space-y-4">
@@ -948,13 +1064,49 @@ export default function JobDetailModal({ job, userRole, onClose, onUpdateJob, on
         <div className="p-4 bg-slate-50/70 border-t border-slate-200/80 flex justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-slate-200/80 hover:bg-slate-300 text-slate-700 font-semibold text-xs rounded-xl transition-colors"
+            className="px-5 py-2 bg-slate-200/80 hover:bg-slate-300 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
           >
             ปิดหน้าต่าง
           </button>
         </div>
 
       </div>
+
+      {/* Confirmation Save Modal Overlay */}
+      {confirmSaveModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-amber-600 mb-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center font-bold text-lg">
+                ⚠️
+              </div>
+              <h3 className="font-bold text-base text-slate-900">{confirmSaveModal.title}</h3>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed mb-6">
+              {confirmSaveModal.message}
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setConfirmSaveModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+              >
+                ❌ ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmSaveModal.onConfirm) confirmSaveModal.onConfirm();
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                ✅ ยืนยันบันทึกข้อมูล
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
