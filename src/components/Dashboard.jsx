@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { 
-  Search, Filter, AlertTriangle, CheckCircle2, Clock, ChevronRight, 
+import {
+  Search, Filter, AlertTriangle, CheckCircle2, Clock, ChevronRight,
   ExternalLink, Layers, PlusCircle, Paperclip, Eye, AlertCircle, Trash2, Edit
 } from 'lucide-react';
 import { WORKFLOW_STAGES } from '../data/mockData';
@@ -18,7 +18,7 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
 
   // Filter jobs logic
   const filteredJobs = jobs.filter((job) => {
-    const matchesSearch = 
+    const matchesSearch =
       job.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.project_name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -32,7 +32,7 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
 
   return (
     <div className="space-y-6 w-full">
-      
+
       {/* Top Banner & Stat Cards - Clean Full Width Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
@@ -56,13 +56,12 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
         </div>
 
         {/* OVERDUE HIGHLIGHT CARD */}
-        <div 
+        <div
           onClick={() => setShowOnlyDelayed(!showOnlyDelayed)}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-            delayedJobsCount > 0 
-              ? 'bg-rose-50/70 border-rose-200 hover:bg-rose-100/70 shadow-2xs' 
+          className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${delayedJobsCount > 0
+              ? 'bg-rose-50/70 border-rose-200 hover:bg-rose-100/70 shadow-2xs'
               : 'bg-white border-slate-200/80'
-          }`}
+            }`}
         >
           <div>
             <div className="flex items-center gap-1.5">
@@ -73,9 +72,8 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
             </div>
             <h3 className="text-2xl font-extrabold text-rose-600 mt-1">{delayedJobsCount}</h3>
           </div>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
-            delayedJobsCount > 0 ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400'
-          }`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${delayedJobsCount > 0 ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400'
+            }`}>
             <AlertTriangle className="w-5 h-5" />
           </div>
         </div>
@@ -149,11 +147,10 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           <button
             onClick={() => setShowOnlyDelayed(!showOnlyDelayed)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 border ${
-              showOnlyDelayed
+            className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 border ${showOnlyDelayed
                 ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-            }`}
+              }`}
           >
             <AlertCircle className="w-3.5 h-3.5" />
             {showOnlyDelayed ? 'กำลังกรอง: ล่าช้าเท่านั้น' : 'กรองเฉพาะงานล่าช้า'}
@@ -171,44 +168,45 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
         </div>
       </div>
 
-      {/* 8-Stage Matrix Table - Full Width Clean Design */}
-      <div className="bg-white rounded-2xl shadow-2xs border border-slate-200/80 overflow-hidden">
+      {/* 10-Stage Matrix Table - Full Width Clean Design with Sharp Crisp Borders */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-300 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1280px]">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-600 text-xs">
-                <th className="py-4 px-6 font-semibold w-80 sticky left-0 bg-slate-50/95 backdrop-blur-md z-10 border-r border-slate-200/80">
+              <tr className="bg-slate-100 border-b-2 border-slate-300 text-slate-700 text-xs">
+                <th className="py-4 px-6 font-bold w-80 sticky left-0 bg-slate-100 z-10 border-r-2 border-slate-300">
                   รายละเอียดออเดอร์ (Job Specifications)
                 </th>
                 {WORKFLOW_STAGES.map((st) => (
-                  <th key={st.id} className="py-4 px-3 font-semibold text-center w-36 border-r border-slate-100 last:border-r-0">
-                    <div className="text-slate-900">{st.shortLabel}</div>
-                    <span className="text-[10px] text-slate-400 font-normal">({st.role})</span>
+                  <th key={st.id} className="py-4 px-3 font-bold text-center w-36 border-r border-slate-300 last:border-r-0">
+                    <div className="text-slate-900 font-extrabold">{st.shortLabel}</div>
+                    <span className="text-[10px] text-slate-500 font-semibold">({st.role})</span>
                   </th>
                 ))}
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-slate-300 text-xs">
               {filteredJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={11} className="py-12 text-center text-slate-400">
                     ไม่พบข้อมูลงานตรงตามเงื่อนไขการค้นหา
                   </td>
                 </tr>
               ) : (
                 filteredJobs.map((job) => {
                   const isJobDelayed = Object.values(job.stages).some(s => s.status === 'delayed');
+                  const totalJobAttachments = WORKFLOW_STAGES.reduce((acc, st) => acc + (job.stages[st.id]?.attachments?.length || 0), 0);
 
                   return (
-                    <tr 
-                      key={job.id} 
-                      className={`hover:bg-slate-50/80 transition-colors group ${
-                        isJobDelayed ? 'bg-rose-50/15' : ''
+                    <tr
+                      key={job.id}
+                      className={`hover:bg-blue-50/30 transition-colors group ${
+                        isJobDelayed ? 'bg-rose-50/25' : ''
                       }`}
                     >
-                      {/* Sticky Left Column */}
-                      <td className="py-4 px-6 sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-200/80">
+                      {/* Sticky Left Column with sharp right border */}
+                      <td className="py-4 px-6 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r-2 border-slate-300">
                         <div className="flex flex-col space-y-1.5">
                           <div className="flex items-center justify-between">
                             <span className="font-mono font-bold text-blue-600 text-xs">{job.id}</span>
@@ -224,24 +222,37 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
                           </span>
 
                           <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
-                            <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-700">
+                            <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-700 font-semibold border border-slate-200">
                               {job.specifications?.quantity?.toLocaleString()} ชิ้น
                             </span>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <button
                                 onClick={() => onSelectJob(job.id)}
-                                className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline text-[11px]"
+                                className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 hover:underline text-[11px] cursor-pointer"
                                 title="ดูรายละเอียดและแก้ไขโครงการ"
                               >
                                 <Edit className="w-3 h-3" /> ดู & แก้ไข
                               </button>
+
+                              {/* Single Attachments button placed in front of Delete button */}
+                              {totalJobAttachments > 0 && (
+                                <button
+                                  onClick={() => onSelectJob(job.id)}
+                                  className="text-purple-700 hover:text-purple-900 bg-purple-100/90 hover:bg-purple-200 px-2 py-0.5 rounded-md border border-purple-300 font-extrabold flex items-center gap-0.5 text-[10px] transition-all cursor-pointer shadow-2xs"
+                                  title={`มีไฟล์/ลิงก์แนบทั้งหมด ${totalJobAttachments} รายการ (คลิกเพื่อดู)`}
+                                >
+                                  <Paperclip className="w-3 h-3 text-purple-700" />
+                                  {totalJobAttachments}
+                                </button>
+                              )}
+
                               {onDeleteJob && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onDeleteJob(job.id);
                                   }}
-                                  className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors"
+                                  className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
                                   title="ลบโครงการนี้"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -252,59 +263,50 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
                         </div>
                       </td>
 
-                      {/* 8-Stage Columns */}
+                      {/* 10-Stage Columns with crisp visible borders */}
                       {WORKFLOW_STAGES.map((st) => {
                         const stageData = job.stages[st.id] || {};
                         const status = stageData.status || 'pending';
-                        const attachmentCount = stageData.attachments?.length || 0;
                         const isCurrentActiveStage = job.current_stage === st.id;
 
                         return (
-                          <td 
-                            key={st.id} 
+                          <td
+                            key={st.id}
                             onClick={() => onSelectJob(job.id)}
-                            className="py-4 px-3 text-center align-middle border-r border-slate-100 last:border-r-0 cursor-pointer hover:bg-blue-50/30 transition-colors"
+                            className="py-4 px-3 text-center align-middle border-r border-slate-200 last:border-r-0 cursor-pointer hover:bg-blue-50/40 transition-colors"
                           >
                             <div className="flex flex-col items-center justify-center space-y-1">
-                              
+
                               {/* Status Node Icon */}
                               {status === 'completed' ? (
-                                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center border border-emerald-300">
+                                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center border border-emerald-300 shadow-2xs">
                                   <CheckCircle2 className="w-4 h-4" />
                                 </div>
                               ) : status === 'delayed' ? (
-                                <div className="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm animate-pulse">
+                                <div className="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs animate-pulse">
                                   <AlertTriangle className="w-4 h-4" />
                                 </div>
                               ) : status === 'in_progress' ? (
-                                <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-sm ring-4 ring-blue-50">
+                                <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs ring-4 ring-blue-100">
                                   <span className="w-2.5 h-2.5 bg-white rounded-full"></span>
                                 </div>
                               ) : (
-                                <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+                                <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
                                 </div>
                               )}
 
                               {/* Product Specific Stage Target Date */}
                               {stageData.due_date ? (
-                                <span className="text-[10px] text-slate-600 font-semibold font-mono bg-slate-100/90 px-1.5 py-0.5 rounded" title={`กำหนดส่งเฉพาะสินค้านี้: ${stageData.due_date}`}>
+                                <span className="text-[10px] text-slate-700 font-bold font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title={`กำหนดส่งเฉพาะสินค้านี้: ${stageData.due_date}`}>
                                   {stageData.due_date.split('-').slice(1).join('/')}
                                 </span>
                               ) : null}
 
                               {/* Active Badge */}
                               {isCurrentActiveStage && (
-                                <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 uppercase">
+                                <span className="text-[9px] font-extrabold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded border border-blue-300 uppercase">
                                   Active
-                                </span>
-                              )}
-
-                              {/* Attachment Indicator */}
-                              {attachmentCount > 0 && (
-                                <span className="text-[10px] text-indigo-600 font-semibold flex items-center gap-0.5 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
-                                  <Paperclip className="w-2.5 h-2.5" />
-                                  {attachmentCount}
                                 </span>
                               )}
                             </div>
