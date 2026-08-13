@@ -51,6 +51,23 @@ export const isSupabaseConfigured = () => {
 // ----------------------------------------------------
 
 /**
+ * Normalize fetched job: clear start_date/due_date from 'pending' stages
+ * so the UI always shows blank dates for stages that haven't started yet.
+ */
+const normalizePendingStages = (job) => {
+  if (!job || !job.stages) return job;
+  const cleanedStages = {};
+  for (const [stageId, stageData] of Object.entries(job.stages)) {
+    if (stageData?.status === 'pending') {
+      cleanedStages[stageId] = { ...stageData, start_date: '', due_date: '' };
+    } else {
+      cleanedStages[stageId] = stageData;
+    }
+  }
+  return { ...job, stages: cleanedStages };
+};
+
+/**
  * Fetch all production jobs from Supabase
  */
 export const fetchJobsFromSupabase = async () => {
@@ -66,7 +83,8 @@ export const fetchJobsFromSupabase = async () => {
     console.error('Supabase fetchJobs error:', error);
     throw error;
   }
-  return data;
+  // Normalize: clear dates from pending stages before returning
+  return (data || []).map(normalizePendingStages);
 };
 
 /**

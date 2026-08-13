@@ -57,10 +57,10 @@ export const INITIAL_JOBS = [
       edit: { status: 'completed', start_date: '2026-08-07', due_date: '2026-08-08', completed_at: '2026-08-07T16:00:00Z', assignee: 'วิภาดา ดีไซน์ (ฝ่ายออกแบบ)', notes: 'ปรับตำแหน่งโลโก้ขยับขึ้น 5mm', attachments: [] },
       production_order: { status: 'completed', start_date: '2026-08-08', due_date: '2026-08-09', completed_at: '2026-08-08T09:00:00Z', assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: 'ออก PO เลขที่ PO-2026-881', attachments: [] },
       production: { status: 'in_progress', start_date: '2026-08-09', due_date: '2026-08-16', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: 'กำลังสกรีนแก้วชุดแรก 2,500 ใบ', attachments: [{ name: 'รูปถ่ายสายการผลิต_ลอต1.jpg', url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=60', type: 'image' }] },
-      qc: { status: 'pending', start_date: '2026-08-16', due_date: '2026-08-18', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
-      complete: { status: 'pending', start_date: '2026-08-18', due_date: '2026-08-22', completed_at: null, assignee: 'สมศักดิ์ ขนส่ง (ฝ่ายจัดส่ง)', notes: 'กำหนดวันวางขายหน้าร้าน 1 ก.ย. 2026', attachments: [] },
-      marketing: { status: 'pending', start_date: '2026-08-22', due_date: '2026-08-28', completed_at: null, assignee: 'สมหญิง ทำโปรโมท (ฝ่ายการตลาด)', notes: 'เตรียมทำสื่อโปรโมต Facebook/IG & Banner หน้าร้าน', attachments: [] },
-      on_sale: { status: 'pending', start_date: '2026-09-01', due_date: '2026-09-01', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: 'ฝ่ายผลิตดูแลการกระจายและวางจำหน่ายหน้าร้าน', attachments: [] }
+      qc: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
+      complete: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'สมศักดิ์ ขนส่ง (ฝ่ายจัดส่ง)', notes: '', attachments: [] },
+      marketing: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'สมหญิง ทำโปรโมท (ฝ่ายการตลาด)', notes: '', attachments: [] },
+      on_sale: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] }
     },
     audit_logs: [
       { id: 'l1', timestamp: '2026-08-01T10:30:00Z', user: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', action: 'สร้างโครงการผลิต JOB-2026-001 เข้าสู่ระบบ' },
@@ -90,14 +90,14 @@ export const INITIAL_JOBS = [
     stages: {
       start: { status: 'completed', start_date: '2026-08-03', due_date: '2026-08-04', completed_at: '2026-08-03T14:00:00Z', assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
       design: { status: 'delayed', start_date: '2026-08-04', due_date: '2026-08-07', completed_at: null, assignee: 'วิภาดา ดีไซน์ (ฝ่ายออกแบบ)', notes: 'รอปรับสเปกความละเอียดโลโก้', attachments: [] },
-      approved: { status: 'pending', start_date: '2026-08-07', due_date: '2026-08-08', completed_at: null, assignee: 'วิภาดา ดีไซน์ (ฝ่ายออกแบบ)', notes: '', attachments: [] },
-      edit: { status: 'pending', start_date: '2026-08-08', due_date: '2026-08-09', completed_at: null, assignee: 'วิภาดา ดีไซน์ (ฝ่ายออกแบบ)', notes: '', attachments: [] },
-      production_order: { status: 'pending', start_date: '2026-08-09', due_date: '2026-08-09', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
-      production: { status: 'pending', start_date: '2026-08-09', due_date: '2026-08-11', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
-      qc: { status: 'pending', start_date: '2026-08-11', due_date: '2026-08-12', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
-      complete: { status: 'pending', start_date: '2026-08-12', due_date: '2026-08-12', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
-      marketing: { status: 'pending', start_date: '2026-08-12', due_date: '2026-08-20', completed_at: null, assignee: 'สมหญิง ทำโปรโมท (ฝ่ายการตลาด)', notes: '', attachments: [] },
-      on_sale: { status: 'pending', start_date: '2026-08-25', due_date: '2026-08-25', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] }
+      approved: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'วิภาดา ดีไซน์ (ฝ่ายออกแบบ)', notes: '', attachments: [] },
+      edit: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'วิภาดา ดีไซน์ (ฝ่ายออกแบบ)', notes: '', attachments: [] },
+      production_order: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
+      production: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
+      qc: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
+      complete: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] },
+      marketing: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'สมหญิง ทำโปรโมท (ฝ่ายการตลาด)', notes: '', attachments: [] },
+      on_sale: { status: 'pending', start_date: '', due_date: '', completed_at: null, assignee: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', notes: '', attachments: [] }
     },
     audit_logs: [
       { id: 'l1', timestamp: '2026-08-03T14:00:00Z', user: 'เกรียงไกร การผลิต (ฝ่ายผลิต)', action: 'สร้างโครงการผลิต JOB-2026-002' }

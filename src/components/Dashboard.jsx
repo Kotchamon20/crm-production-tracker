@@ -282,8 +282,8 @@ export default function Dashboard({ jobs, userRole, onSelectJob, onCreateNewClic
                                 </div>
                               )}
 
-                              {/* Product Specific Stage Target Date - only show if stage has been started */}
-                              {stageData.due_date && status !== 'pending' ? (
+                              {/* Product Specific Stage Target Date */}
+                              {stageData.due_date ? (
                                 <span className="text-[10px] text-slate-600 font-semibold font-mono bg-slate-100/90 px-1.5 py-0.5 rounded" title={`กำหนดส่งเฉพาะสินค้านี้: ${stageData.due_date}`}>
                                   {stageData.due_date.split('-').slice(1).join('/')}
                                 </span>
