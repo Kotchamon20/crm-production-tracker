@@ -80,9 +80,11 @@ function App() {
   // Check for upcoming 1-day reminders and overdue jobs automatically
   useEffect(() => {
     if (jobs && jobs.length > 0) {
+      // If Supabase is configured, wait until real DB jobs are loaded before checking reminders
+      if (isSupabaseConfigured() && !isDbConnected) return;
       checkAndSendDueReminders(jobs).catch(() => {});
     }
-  }, [jobs]);
+  }, [jobs, isDbConnected]);
 
   // Sync state to localStorage
   useEffect(() => {

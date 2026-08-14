@@ -362,10 +362,17 @@ export const notifyJobStatusUpdated = async (job, stageLabel, updatedBy) => {
  * Send alert for overdue jobs
  */
 export const notifyJobOverdue = async (job, daysOverdue = 1) => {
+  const stageObj = WORKFLOW_STAGES.find(s => s.id === job.current_stage);
+  const stageLabel = stageObj ? stageObj.label : job.current_stage;
+  const currentStageData = job.stages?.[job.current_stage] || {};
+  const stageAssignee = currentStageData.assignee || '';
+  const stageStatus = currentStageData.status || '';
+  const stageDueDate = currentStageData.due_date || job.due_date || '';
+
   const title = `⚠️ งานเลยกำหนดส่งมอบ (${daysOverdue} วัน)`;
   const extraText = `🚨 งานนี้เลยกำหนดส่งมอบแล้ว ${daysOverdue} วัน โปรดเร่งติดตาม!`;
-  const flexMessage = createFlexMessageCard(title, job, job.current_stage || 'in_progress', 'overdue', extraText);
-  const fallbackText = `⚠️ [Nitan Tracker - เลยกำหนดส่งมอบ]\n📌 ${job.id}: ${job.project_name}\n🚨 เลยกำหนดส่งมอบแล้ว ${daysOverdue} วัน\n🔗 เปิดดูในระบบ: https://crm-production-tracker.vercel.app/`;
+  const flexMessage = createFlexMessageCard(title, job, stageLabel || 'in_progress', 'overdue', extraText, stageAssignee, stageStatus, stageDueDate);
+  const fallbackText = `⚠️ [Nitan Tracker - เลยกำหนดส่งมอบ]\n📌 ${job.id}: ${job.project_name}\n⚡ ขั้นตอน: ${stageLabel}\n🚨 เลยกำหนดส่งมอบแล้ว ${daysOverdue} วัน\n🔗 เปิดดูในระบบ: https://crm-production-tracker.vercel.app/`;
   return sendLineFlexOrText(flexMessage, fallbackText);
 };
 
@@ -401,16 +408,57 @@ export const sendTestLineNotification = async () => {
 export const checkAndSendDueReminders = async (jobs) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return;
 
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const parts = String(dateStr).split('T')[0].split('-');
+    if (parts.length !== 3) return new Date(dateStr);
+    const [y, m, d] = parts.map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  };
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const notifiedKey = 'niitan_notified_reminders';
-  const notifiedMap = JSON.parse(localStorage.getItem(notifiedKey) || '{}');
+  // Fetch notified map from Supabase DB (global state across all devices/users)
+  let dbNotifiedMap = null;
+  try {
+    dbNotifiedMap = await fetchAppSettingFromSupabase('notified_reminders');
+  } catch (e) {
+    console.warn('Could not fetch notified_reminders setting:', e);
+  }
+
+  const localNotifiedMap = JSON.parse(localStorage.getItem('niitan_notified_reminders') || '{}');
+  const notifiedMap = { ...localNotifiedMap, ...(dbNotifiedMap || {}) };
+  let hasNewNotification = false;
 
   for (const job of jobs) {
-    if (!job.due_date && !job.on_sale_date) continue;
-    const dueDateStr = job.due_date || job.on_sale_date;
-    const dueDate = new Date(dueDateStr);
+    if (!job || !job.id) continue;
+    const currentStageId = job.current_stage;
+    const currentStageData = job.stages?.[currentStageId] || {};
+    const stageStatus = currentStageData.status;
+
+    // Skip completed or released jobs/stages
+    if (
+      currentStageId === 'complete' || 
+      currentStageId === 'on_sale' || 
+      stageStatus === 'completed'
+    ) {
+      continue;
+    }
+
+    // Prefer active stage due date over overall job due date
+    let dueDateStr = currentStageData.due_date;
+    if (!dueDateStr) {
+      // Fallback to job.due_date only if current stage has no specific date set and is in late stages
+      if (currentStageId === 'qc' || currentStageId === 'complete' || currentStageId === 'on_sale') {
+        dueDateStr = job.due_date || job.on_sale_date;
+      }
+    }
+    if (!dueDateStr) continue;
+
+    const dueDate = parseLocalDate(dueDateStr);
+    if (!dueDate || isNaN(dueDate.getTime())) continue;
     dueDate.setHours(0, 0, 0, 0);
 
     const timeDiff = dueDate.getTime() - today.getTime();
@@ -418,23 +466,33 @@ export const checkAndSendDueReminders = async (jobs) => {
 
     // Case 1: 1 Day before due date (daysDiff === 1)
     if (daysDiff === 1) {
-      const reminderKey = `reminder_1day_${job.id}_${dueDateStr}`;
+      const reminderKey = `reminder_1day_${job.id}_stage_${currentStageId}_${dueDateStr}`;
       if (!notifiedMap[reminderKey]) {
-        await notifyJobUpcomingDue(job);
         notifiedMap[reminderKey] = new Date().toISOString();
+        hasNewNotification = true;
+        await notifyJobUpcomingDue(job);
       }
     }
 
-    // Case 2: Overdue (daysDiff < 0) and not completed
-    if (daysDiff < 0 && job.current_stage !== 'complete' && job.current_stage !== 'on_sale') {
+    // Case 2: Overdue (daysDiff < 0)
+    if (daysDiff < 0) {
       const daysOverdue = Math.abs(daysDiff);
-      const overdueKey = `overdue_${job.id}_${daysOverdue}d`;
+      // Stage-specific key tied to stage and due date to avoid duplicate daily spam
+      const overdueKey = `overdue_${job.id}_stage_${currentStageId}_${dueDateStr}`;
       if (!notifiedMap[overdueKey]) {
-        await notifyJobOverdue(job, daysOverdue);
         notifiedMap[overdueKey] = new Date().toISOString();
+        hasNewNotification = true;
+        await notifyJobOverdue(job, daysOverdue);
       }
     }
   }
 
-  localStorage.setItem(notifiedKey, JSON.stringify(notifiedMap));
+  if (hasNewNotification) {
+    localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+    try {
+      await saveAppSettingToSupabase('notified_reminders', notifiedMap);
+    } catch (e) {
+      console.warn('Could not save notified_reminders setting:', e);
+    }
+  }
 };
