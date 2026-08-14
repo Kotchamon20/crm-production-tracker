@@ -13,13 +13,13 @@ export default function JobForm({ onCreateJob, userRole, jobs = [] }) {
   const [formData, setFormData] = useState({
     projectName: '',
     startDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    onSaleDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    quantity: '1000',
-    materialGrade: 'Premium Glass Grade A (Borosilicate)',
-    color: 'ใสสกรีน 4 สี',
-    size: '16 oz (480 ml)',
-    patternDesign: 'Standard Brand Logo'
+    dueDate: '',
+    onSaleDate: '',
+    quantity: '',
+    materialGrade: '',
+    color: '',
+    size: '',
+    patternDesign: ''
   });
 
   // Dynamic responsibles list starts with blank names until user selects from history or types
@@ -365,6 +365,7 @@ export default function JobForm({ onCreateJob, userRole, jobs = [] }) {
                   required
                   value={formData.quantity}
                   onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                  placeholder="ระบุจำนวนผลิต เช่น 1000..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700"
                 />
               </div>
