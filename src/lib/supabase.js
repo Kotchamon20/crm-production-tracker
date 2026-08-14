@@ -141,6 +141,50 @@ export const deleteJobFromSupabase = async (jobId) => {
 };
 
 /**
+ * One-time cleanup: delete seed/mock data from Supabase DB
+ * Removes JOB-2026-001, JOB-2026-002 and their notifications.
+ * Also clears the notified_reminders cache that may reference them.
+ */
+const MOCK_JOB_IDS = ['JOB-2026-001', 'JOB-2026-002'];
+
+export const purgeMockDataFromSupabase = async () => {
+  // Only run once per device
+  if (localStorage.getItem('niitan_mock_purged') === 'true') return;
+
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  try {
+    // Delete mock jobs from DB
+    await client
+      .from('jobs')
+      .delete()
+      .in('id', MOCK_JOB_IDS);
+
+    // Delete mock notifications from DB
+    await client
+      .from('notifications')
+      .delete()
+      .in('job_id', MOCK_JOB_IDS);
+
+    // Clear notified_reminders cache in DB (may contain mock job keys)
+    await client
+      .from('app_settings')
+      .delete()
+      .eq('key', 'notified_reminders');
+
+    // Clear local notified_reminders cache
+    localStorage.removeItem('niitan_notified_reminders');
+
+    // Mark as done
+    localStorage.setItem('niitan_mock_purged', 'true');
+    console.log('✅ Mock/seed data purged from Supabase DB successfully.');
+  } catch (e) {
+    console.warn('Could not purge mock data from Supabase:', e);
+  }
+};
+
+/**
  * Fetch notifications from Supabase
  */
 export const fetchNotificationsFromSupabase = async () => {

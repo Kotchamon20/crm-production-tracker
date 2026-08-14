@@ -110,21 +110,6 @@ CREATE POLICY "Allow public access to notifications" ON public.notifications FOR
 
 DROP POLICY IF EXISTS "Allow public access to app_settings" ON public.app_settings;
 CREATE POLICY "Allow public access to app_settings" ON public.app_settings FOR ALL USING (true) WITH CHECK (true);
-
--- 8. Seed Initial Data
-INSERT INTO public.jobs (
-  id, project_name, product_type, specifications, start_date, due_date, on_sale_date, responsibles, current_stage, stages, audit_logs
-) VALUES (
-  'JOB-2026-001',
-  'แก้วกาแฟพรีเมียม ลาย Summer Collection 2026',
-  'glass',
-  '{"size": "16 oz (480 ml)", "color": "ใสสกรีน 4 สี", "quantity": 5000, "material_grade": "Premium Glass Grade A (Borosilicate)", "pattern_design": "Summer Tropical Botanical v2"}'::jsonb,
-  '2026-08-01', '2026-08-22', '2026-09-01',
-  '[{"id": "r1", "name": "เกรียงไกร การผลิต", "departmentId": "production", "departmentName": "ฝ่ายผลิต & วางขาย (Production)"}, {"id": "r2", "name": "วิภาดา ดีไซน์", "departmentId": "designer", "departmentName": "ฝ่ายออกแบบ (Design)"}]'::jsonb,
-  'production',
-  '{"start": {"status": "completed"}, "design": {"status": "completed"}, "production": {"status": "in_progress"}}'::jsonb,
-  '[{"id": "l1", "action": "สร้างโครงการผลิต JOB-2026-001", "user": "เกรียงไกร", "timestamp": "2026-08-01T10:30:00Z"}]'::jsonb
-) ON CONFLICT (id) DO NOTHING;
 `;
 
   const handleCopySql = () => {

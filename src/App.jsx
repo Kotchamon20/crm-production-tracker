@@ -18,6 +18,7 @@ import {
   fetchJobsFromSupabase, 
   saveJobToSupabase, 
   deleteJobFromSupabase,
+  purgeMockDataFromSupabase,
   fetchNotificationsFromSupabase, 
   saveNotificationToSupabase,
   markNotificationReadInSupabase,
@@ -29,12 +30,14 @@ function App() {
   // Load state from localStorage or initial mock data
   const [jobs, setJobs] = useState(() => {
     const saved = localStorage.getItem('niitan_crm_jobs');
-    return saved ? JSON.parse(saved) : INITIAL_JOBS;
+    const list = saved ? JSON.parse(saved) : INITIAL_JOBS;
+    return (list || []).filter(j => !j.is_mock && !String(j.id).startsWith('JOB-2026-00'));
   });
 
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem('niitan_crm_notifications');
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+    const list = saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+    return (list || []).filter(n => n.job_id !== 'JOB-2026-001' && n.job_id !== 'JOB-2026-002');
   });
 
   const [userRole, setUserRole] = useState(() => {
@@ -55,6 +58,9 @@ function App() {
     }
 
     try {
+      // Purge mock/seed data from DB (runs once per device)
+      await purgeMockDataFromSupabase();
+
       const [remoteJobs, remoteNotifs] = await Promise.all([
         fetchJobsFromSupabase(),
         fetchNotificationsFromSupabase()

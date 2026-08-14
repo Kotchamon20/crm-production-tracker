@@ -434,6 +434,12 @@ export const checkAndSendDueReminders = async (jobs) => {
 
   for (const job of jobs) {
     if (!job || !job.id) continue;
+
+    // Skip mock/demo jobs from sending automated LINE notifications
+    if (job.is_mock === true || job.isMock === true || String(job.id).startsWith('JOB-2026-00')) {
+      continue;
+    }
+
     const currentStageId = job.current_stage;
     const currentStageData = job.stages?.[currentStageId] || {};
     const stageStatus = currentStageData.status;
