@@ -8,6 +8,7 @@ import { WORKFLOW_STAGES, DEPARTMENTS } from '../data/mockData';
 export default function JobForm({ onCreateJob, userRole }) {
   const [productType, setProductType] = useState('glass');
   const [customProductTypeName, setCustomProductTypeName] = useState('');
+  const [startStageId, setStartStageId] = useState('design');
   
   const [formData, setFormData] = useState({
     projectName: '',
@@ -86,6 +87,8 @@ export default function JobForm({ onCreateJob, userRole }) {
     // Build 10 stages
     const initialStages = {};
     const startDateObj = new Date(formData.startDate);
+    const activeStageIdx = WORKFLOW_STAGES.findIndex(s => s.id === startStageId);
+    const targetIdx = activeStageIdx >= 0 ? activeStageIdx : 1;
 
     let currentDayOffset = 0;
     WORKFLOW_STAGES.forEach((st, idx) => {
@@ -97,16 +100,41 @@ export default function JobForm({ onCreateJob, userRole }) {
       const matchingResp = responsiblesList.find(r => r.departmentId === st.departmentId) || responsiblesList[0];
       const assigneeString = matchingResp ? `${matchingResp.name} (${matchingResp.departmentName})` : 'ทีมงานผู้รับผิดชอบ';
 
+      let stageStatus = 'pending';
+      let completedAt = null;
+
+      if (idx < targetIdx) {
+        // Prior stages are retroactively completed!
+        stageStatus = 'completed';
+        completedAt = new Date().toISOString();
+      } else if (idx === targetIdx) {
+        // Selected starting stage is in progress!
+        stageStatus = 'in_progress';
+        completedAt = null;
+      } else {
+        // Future stages are pending
+        stageStatus = 'pending';
+        completedAt = null;
+      }
+
       initialStages[st.id] = {
-        status: idx === 0 ? 'completed' : idx === 1 ? 'in_progress' : 'pending',
+        status: stageStatus,
         start_date: stStart.toISOString().split('T')[0],
         due_date: st.id === 'on_sale' ? formData.onSaleDate : stDue.toISOString().split('T')[0],
-        completed_at: idx === 0 ? new Date().toISOString() : null,
+        completed_at: completedAt,
         assignee: assigneeString,
-        notes: idx === 0 ? 'เปิดโครงการผลิตสินค้าเรียบร้อย' : st.id === 'complete' ? `กำหนดวันวางขาย: ${formData.onSaleDate}` : st.id === 'marketing' ? 'เตรียมสื่อการตลาด & แคมเปญโปรโมต' : st.id === 'on_sale' ? 'ฝ่ายผลิต (Production) ดูแลจัดส่งและวางจำหน่ายหน้าร้าน' : '',
+        notes: idx < targetIdx 
+          ? 'อนุมัติ/เสร็จสิ้นย้อนหลังตอนเปิดโครงการ'
+          : idx === targetIdx ? 'ขั้นตอนหลักที่กำลังดำเนินการอยู่ปัจจุบัน'
+          : st.id === 'complete' ? `กำหนดวันวางขาย: ${formData.onSaleDate}` 
+          : st.id === 'marketing' ? 'เตรียมสื่อการตลาด & แคมเปญโปรโมต' 
+          : st.id === 'on_sale' ? 'ฝ่ายผลิต (Production) ดูแลจัดส่งและวางจำหน่ายหน้าร้าน' 
+          : '',
         attachments: []
       };
     });
+
+    const activeStageObj = WORKFLOW_STAGES[targetIdx] || WORKFLOW_STAGES[1];
 
     const newJob = {
       id: newJobId,
@@ -123,14 +151,14 @@ export default function JobForm({ onCreateJob, userRole }) {
       due_date: formData.dueDate,
       on_sale_date: formData.onSaleDate,
       responsibles: responsiblesList,
-      current_stage: 'design',
+      current_stage: startStageId,
       stages: initialStages,
       audit_logs: [
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toISOString(),
           user: responsiblesList[0]?.name || 'Production Team',
-          action: `สร้างโครงการผลิตใหม่ ${newJobId} (${finalProductType}) โดย Production ดูแลสเตจผลิตและสเตจ On-Sale (กำหนดวางขาย ${formData.onSaleDate})`
+          action: `สร้างโครงการผลิตใหม่ ${newJobId} (${finalProductType}) ที่ขั้นตอน "${activeStageObj.label}"${targetIdx > 0 ? ` (ขั้นตอนก่อนหน้า ${targetIdx} สเตจถูกทำเครื่องหมายว่าเสร็จสิ้นย้อนหลังอัตโนมัติ)` : ''}`
         }
       ]
     };
@@ -168,6 +196,41 @@ export default function JobForm({ onCreateJob, userRole }) {
                   placeholder="เช่น แก้วกาแฟพรีเมียม ลาย Summer Collection 2026"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2 bg-blue-50/40 p-4 rounded-2xl border border-blue-200/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
+                  <label className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-blue-600" /> ขั้นตอนปัจจุบันที่กำลังดำเนินงาน (Active Starting Stage)
+                  </label>
+                  {WORKFLOW_STAGES.findIndex(s => s.id === startStageId) > 0 && (
+                    <span className="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full shadow-2xs">
+                      ⚡ บันทึกย้อนหลัง: ขั้นตอนก่อนหน้า {WORKFLOW_STAGES.findIndex(s => s.id === startStageId)} ขั้นตอนจะถูกปรับเป็น "เสร็จสิ้น (Completed)" อัตโนมัติ
+                    </span>
+                  )}
+                </div>
+                <select
+                  value={startStageId}
+                  onChange={(e) => setStartStageId(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-blue-300 bg-white text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                >
+                  {WORKFLOW_STAGES.map((st, idx) => {
+                    const currentIdx = WORKFLOW_STAGES.findIndex(s => s.id === startStageId);
+                    let labelTag = '';
+                    if (idx < currentIdx) labelTag = ' (จะเสร็จสมบูรณ์ย้อนหลัง ✅)';
+                    else if (idx === currentIdx) labelTag = ' (กำลังดำเนินการ 🔵)';
+                    else labelTag = ' (รอดำเนินการ ⏳)';
+
+                    return (
+                      <option key={st.id} value={st.id}>
+                        {idx + 1}. {st.label}{labelTag}
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  💡 หากมาบันทึกย้อนหลัง และเลือกขั้นตอนเช่น "สั่งผลิต" หรือ "Production" ระบบจะเปลี่ยนขั้นตอนก่อนหน้าทั้งหมดให้เป็น <strong className="text-emerald-600">เสร็จสมบูรณ์ (Completed)</strong> โดยอัตโนมัติ
+                </p>
               </div>
 
               <div className="space-y-1.5">
