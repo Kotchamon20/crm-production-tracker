@@ -311,6 +311,7 @@ function App() {
           <JobForm 
             onCreateJob={handleCreateJob} 
             userRole={userRole}
+            jobs={jobs}
           />
         )}
       </main>

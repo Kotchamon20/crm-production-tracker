@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { WORKFLOW_STAGES, DEPARTMENTS } from '../data/mockData';
 
-export default function JobForm({ onCreateJob, userRole }) {
+export default function JobForm({ onCreateJob, userRole, jobs = [] }) {
   const [productType, setProductType] = useState('glass');
   const [customProductTypeName, setCustomProductTypeName] = useState('');
   const [startStageId, setStartStageId] = useState('design');
@@ -22,13 +22,42 @@ export default function JobForm({ onCreateJob, userRole }) {
     patternDesign: 'Standard Brand Logo'
   });
 
-  // Dynamic responsibles list explicitly linked to Departments (Production handles manufacturing & release)
+  // Dynamic responsibles list starts with blank names until user selects from history or types
   const [responsiblesList, setResponsiblesList] = useState([
-    { id: '1', departmentId: 'production', departmentName: 'ฝ่ายผลิต & วางขาย (Production)', name: 'เกรียงไกร การผลิต' },
-    { id: '2', departmentId: 'designer', departmentName: 'ฝ่ายออกแบบ (Design)', name: 'วิภาดา ดีไซน์' },
-    { id: '3', departmentId: 'marketing', departmentName: 'ฝ่ายการตลาด (Marketing)', name: 'สมหญิง ทำโปรโมท' },
-    { id: '4', departmentId: 'logistics', departmentName: 'ฝ่ายจัดส่ง & คลังสินค้า (Logistics)', name: 'สมศักดิ์ ขนส่ง' }
+    { id: '1', departmentId: 'production', departmentName: 'ฝ่ายผลิต & วางขาย (Production)', name: '' },
+    { id: '2', departmentId: 'designer', departmentName: 'ฝ่ายออกแบบ (Design)', name: '' },
+    { id: '3', departmentId: 'marketing', departmentName: 'ฝ่ายการตลาด (Marketing)', name: '' },
+    { id: '4', departmentId: 'logistics', departmentName: 'ฝ่ายจัดส่ง & คลังสินค้า (Logistics)', name: '' }
   ]);
+
+  // Extract unique past responsible names from existing jobs history
+  const getPastNamesForDepartment = (deptId) => {
+    const nameSet = new Set();
+    if (Array.isArray(jobs)) {
+      jobs.forEach(j => {
+        if (Array.isArray(j.responsibles)) {
+          j.responsibles.forEach(r => {
+            if (r.name && r.name.trim()) {
+              if (!deptId || r.departmentId === deptId) {
+                nameSet.add(r.name.trim());
+              }
+            }
+          });
+        }
+        if (j.stages && typeof j.stages === 'object') {
+          Object.values(j.stages).forEach(stage => {
+            if (stage.assignee && typeof stage.assignee === 'string') {
+              const rawName = stage.assignee.split('(')[0].trim();
+              if (rawName && rawName !== 'ทีมงานผู้รับผิดชอบ') {
+                nameSet.add(rawName);
+              }
+            }
+          });
+        }
+      });
+    }
+    return Array.from(nameSet);
+  };
 
   const [selectedDeptId, setSelectedDeptId] = useState('production');
   const [customDeptTitle, setCustomDeptTitle] = useState('');
@@ -491,15 +520,27 @@ export default function JobForm({ onCreateJob, userRole }) {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-500">ชื่อผู้รับผิดชอบประจำฝ่าย</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-500">ชื่อผู้รับผิดชอบประจำฝ่าย</label>
+                        {getPastNamesForDepartment(resp.departmentId).length > 0 && (
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                            📋 มีประวัติเดิม {getPastNamesForDepartment(resp.departmentId).length} รายชื่อ
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
-                        required
+                        list={`past-names-${resp.id}`}
                         value={resp.name}
                         onChange={(e) => handleUpdateRolePerson(resp.id, e.target.value)}
-                        placeholder="ระบุชื่อผู้รับผิดชอบ"
+                        placeholder={getPastNamesForDepartment(resp.departmentId).length > 0 ? "พิมพ์ค้นหา หรือเลือกจากประวัติเดิม..." : "กรอกชื่อผู้รับผิดชอบ..."}
                         className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
                       />
+                      <datalist id={`past-names-${resp.id}`}>
+                        {getPastNamesForDepartment(resp.departmentId).map((pastName, idx) => (
+                          <option key={idx} value={pastName} />
+                        ))}
+                      </datalist>
                     </div>
                   </div>
                 );
