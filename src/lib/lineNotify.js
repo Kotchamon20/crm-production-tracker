@@ -420,17 +420,45 @@ export const checkAndSendDueReminders = async (jobs) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Fetch notified map from Supabase DB (global state across all devices/users)
-  let dbNotifiedMap = null;
-  try {
-    dbNotifiedMap = await fetchAppSettingFromSupabase('notified_reminders');
-  } catch (e) {
-    console.warn('Could not fetch notified_reminders setting:', e);
+  // 1. Fetch & merge latest notified map from Supabase DB and LocalStorage
+  let dbNotifiedMap = {};
+  if (isSupabaseConfigured()) {
+    try {
+      const fetched = await fetchAppSettingFromSupabase('notified_reminders');
+      if (fetched && typeof fetched === 'object') {
+        dbNotifiedMap = fetched;
+      }
+    } catch (e) {
+      console.warn('Could not fetch notified_reminders setting:', e);
+    }
   }
 
-  const localNotifiedMap = JSON.parse(localStorage.getItem('niitan_notified_reminders') || '{}');
-  const notifiedMap = { ...localNotifiedMap, ...(dbNotifiedMap || {}) };
-  let hasNewNotification = false;
+  let localNotifiedMap = {};
+  try {
+    localNotifiedMap = JSON.parse(localStorage.getItem('niitan_notified_reminders') || '{}');
+  } catch (e) {}
+
+  // Merge DB and local maps so no sent notification is ever forgotten
+  const notifiedMap = { ...localNotifiedMap, ...dbNotifiedMap };
+
+  // Save merged map back to ensure local & remote are synchronized
+  localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+
+  // Helper to atomic-record a new key to DB & LocalStorage BEFORE sending notification
+  const persistNotificationKey = async (key) => {
+    notifiedMap[key] = new Date().toISOString();
+    localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+
+    if (isSupabaseConfigured()) {
+      try {
+        const latestDb = (await fetchAppSettingFromSupabase('notified_reminders')) || {};
+        const fullMap = { ...latestDb, ...notifiedMap };
+        await saveAppSettingToSupabase('notified_reminders', fullMap);
+      } catch (e) {
+        console.warn('Could not sync notified_reminders to Supabase:', e);
+      }
+    }
+  };
 
   for (const job of jobs) {
     if (!job || !job.id) continue;
@@ -474,15 +502,8 @@ export const checkAndSendDueReminders = async (jobs) => {
     if (daysDiff === 1) {
       const reminderKey = `reminder_1day_${job.id}_stage_${currentStageId}_${dueDateStr}`;
       if (!notifiedMap[reminderKey]) {
-        // Record key immediately in local & DB before sending notification
-        notifiedMap[reminderKey] = new Date().toISOString();
-        hasNewNotification = true;
-        localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
-        try {
-          await saveAppSettingToSupabase('notified_reminders', notifiedMap);
-        } catch (e) {
-          console.warn('Could not sync notified_reminders to Supabase:', e);
-        }
+        // Record key globally in DB & LocalStorage BEFORE sending LINE message
+        await persistNotificationKey(reminderKey);
         await notifyJobUpcomingDue(job);
       }
     }
@@ -490,24 +511,12 @@ export const checkAndSendDueReminders = async (jobs) => {
     // Case 2: Overdue (daysDiff < 0)
     if (daysDiff < 0) {
       const daysOverdue = Math.abs(daysDiff);
-      // Stage-specific key tied to stage and due date to avoid duplicate daily spam
       const overdueKey = `overdue_${job.id}_stage_${currentStageId}_${dueDateStr}`;
       if (!notifiedMap[overdueKey]) {
-        // Record key immediately in local & DB before sending notification
-        notifiedMap[overdueKey] = new Date().toISOString();
-        hasNewNotification = true;
-        localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
-        try {
-          await saveAppSettingToSupabase('notified_reminders', notifiedMap);
-        } catch (e) {
-          console.warn('Could not sync notified_reminders to Supabase:', e);
-        }
+        // Record key globally in DB & LocalStorage BEFORE sending LINE message
+        await persistNotificationKey(overdueKey);
         await notifyJobOverdue(job, daysOverdue);
       }
     }
-  }
-
-  if (hasNewNotification) {
-    console.log('✅ Updated notified_reminders keys in DB & LocalStorage.');
   }
 };
