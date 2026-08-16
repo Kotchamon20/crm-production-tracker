@@ -474,8 +474,15 @@ export const checkAndSendDueReminders = async (jobs) => {
     if (daysDiff === 1) {
       const reminderKey = `reminder_1day_${job.id}_stage_${currentStageId}_${dueDateStr}`;
       if (!notifiedMap[reminderKey]) {
+        // Record key immediately in local & DB before sending notification
         notifiedMap[reminderKey] = new Date().toISOString();
         hasNewNotification = true;
+        localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+        try {
+          await saveAppSettingToSupabase('notified_reminders', notifiedMap);
+        } catch (e) {
+          console.warn('Could not sync notified_reminders to Supabase:', e);
+        }
         await notifyJobUpcomingDue(job);
       }
     }
@@ -486,19 +493,21 @@ export const checkAndSendDueReminders = async (jobs) => {
       // Stage-specific key tied to stage and due date to avoid duplicate daily spam
       const overdueKey = `overdue_${job.id}_stage_${currentStageId}_${dueDateStr}`;
       if (!notifiedMap[overdueKey]) {
+        // Record key immediately in local & DB before sending notification
         notifiedMap[overdueKey] = new Date().toISOString();
         hasNewNotification = true;
+        localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+        try {
+          await saveAppSettingToSupabase('notified_reminders', notifiedMap);
+        } catch (e) {
+          console.warn('Could not sync notified_reminders to Supabase:', e);
+        }
         await notifyJobOverdue(job, daysOverdue);
       }
     }
   }
 
   if (hasNewNotification) {
-    localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
-    try {
-      await saveAppSettingToSupabase('notified_reminders', notifiedMap);
-    } catch (e) {
-      console.warn('Could not save notified_reminders setting:', e);
-    }
+    console.log('✅ Updated notified_reminders keys in DB & LocalStorage.');
   }
 };

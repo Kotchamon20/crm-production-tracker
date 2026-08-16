@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   LayoutDashboard, PlusCircle, BarChart3, Clock, Bell, Kanban, Calendar,
   Layers, Shield, Sparkles, CheckCircle2, AlertTriangle, FileSpreadsheet, MessageSquare, Database, RefreshCw
@@ -83,11 +83,14 @@ function App() {
     loadDataFromSupabase();
   }, [loadDataFromSupabase]);
 
-  // Check for upcoming 1-day reminders and overdue jobs automatically
+  // Check for upcoming 1-day reminders and overdue jobs automatically (strictly ONCE per session)
+  const hasCheckedRemindersRef = useRef(false);
+
   useEffect(() => {
-    if (jobs && jobs.length > 0) {
+    if (jobs && jobs.length > 0 && !hasCheckedRemindersRef.current) {
       // If Supabase is configured, wait until real DB jobs are loaded before checking reminders
       if (isSupabaseConfigured() && !isDbConnected) return;
+      hasCheckedRemindersRef.current = true;
       checkAndSendDueReminders(jobs).catch(() => {});
     }
   }, [jobs, isDbConnected]);

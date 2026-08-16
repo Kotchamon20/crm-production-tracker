@@ -167,15 +167,6 @@ export const purgeMockDataFromSupabase = async () => {
       .delete()
       .in('job_id', MOCK_JOB_IDS);
 
-    // Clear notified_reminders cache in DB (may contain mock job keys)
-    await client
-      .from('app_settings')
-      .delete()
-      .eq('key', 'notified_reminders');
-
-    // Clear local notified_reminders cache
-    localStorage.removeItem('niitan_notified_reminders');
-
     // Mark as done
     localStorage.setItem('niitan_mock_purged', 'true');
     console.log('✅ Mock/seed data purged from Supabase DB successfully.');
