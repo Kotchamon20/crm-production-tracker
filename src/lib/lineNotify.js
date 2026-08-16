@@ -1,31 +1,35 @@
 // LINE Messaging API Bot Service for Niitan Production Tracker
 
 export const LINE_CHANNEL_ACCESS_TOKEN = 
-  import.meta.env.VITE_LINE_CHANNEL_ACCESS_TOKEN || 
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_LINE_CHANNEL_ACCESS_TOKEN) || 
   'J00lAX72A/wSSFMXFDlV1l1royQK7zkGWHPAjos/3HsYgS1wSL0qEa7/f93JGyPgzE/5z6PWVRRMuugSOMt9KVx8PsBQmfJ0TGcmB+bx6t15DpkWv6b9jKAHYI22z16vFCtEIpY3G/3X2wFB85TKTgdB04t89/1O/w1cDnyilFU=';
 
 export const LINE_CHANNEL_SECRET = 
-  import.meta.env.VITE_LINE_CHANNEL_SECRET || 
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_LINE_CHANNEL_SECRET) || 
   'd908f123a63f362a3dc872faf1177d05';
 
-import { fetchAppSettingFromSupabase } from './supabase';
-import { WORKFLOW_STAGES } from '../data/mockData';
+import { fetchAppSettingFromSupabase, saveAppSettingToSupabase, isSupabaseConfigured } from './supabase.js';
+import { WORKFLOW_STAGES } from '../data/mockData.js';
 
 export const getStoredGroupId = async () => {
   try {
     const dbSetting = await fetchAppSettingFromSupabase('line_group_id');
     if (dbSetting?.groupId) {
-      localStorage.setItem('nitan_line_group_id', dbSetting.groupId);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('nitan_line_group_id', dbSetting.groupId);
+      }
       return dbSetting.groupId;
     }
   } catch (e) {
     console.warn('Could not fetch line_group_id from Supabase:', e);
   }
-  return import.meta.env.VITE_LINE_GROUP_ID || localStorage.getItem('nitan_line_group_id') || 'C3c38541be1266b9f6bd01c327af92491';
+  const envGroup = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_LINE_GROUP_ID);
+  const localGroup = (typeof window !== 'undefined' && window.localStorage) ? localStorage.getItem('nitan_line_group_id') : null;
+  return envGroup || localGroup || 'C3c38541be1266b9f6bd01c327af92491';
 };
 
 export const setStoredGroupId = (groupId) => {
-  if (groupId) {
+  if (groupId && typeof window !== 'undefined' && window.localStorage) {
     localStorage.setItem('nitan_line_group_id', groupId.trim());
   }
 };
@@ -434,20 +438,26 @@ export const checkAndSendDueReminders = async (jobs) => {
   }
 
   let localNotifiedMap = {};
-  try {
-    localNotifiedMap = JSON.parse(localStorage.getItem('niitan_notified_reminders') || '{}');
-  } catch (e) {}
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      localNotifiedMap = JSON.parse(localStorage.getItem('niitan_notified_reminders') || '{}');
+    } catch (e) {}
+  }
 
   // Merge DB and local maps so no sent notification is ever forgotten
   const notifiedMap = { ...localNotifiedMap, ...dbNotifiedMap };
 
   // Save merged map back to ensure local & remote are synchronized
-  localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+  if (typeof window !== 'undefined' && window.localStorage) {
+    localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+  }
 
   // Helper to atomic-record a new key to DB & LocalStorage BEFORE sending notification
   const persistNotificationKey = async (key) => {
     notifiedMap[key] = new Date().toISOString();
-    localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('niitan_notified_reminders', JSON.stringify(notifiedMap));
+    }
 
     if (isSupabaseConfigured()) {
       try {

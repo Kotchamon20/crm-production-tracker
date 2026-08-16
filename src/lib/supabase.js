@@ -1,19 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Default Supabase project URL & Anon Key
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://vvscpbgwgmnawwkymeqg.supabase.co';
+export const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 'https://vvscpbgwgmnawwkymeqg.supabase.co';
 export const DEFAULT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2c2NwYmd3Z21uYXd3a3ltZXFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc4NTgsImV4cCI6MjEwMjE4Mzg1OH0.CNQhHl0VqmkgaxgKANbLIhBSNWc3PVQY4t4h-GA0P00';
 
 // Get Anon Key from Env, LocalStorage, or Default Fallback
 export const getStoredAnonKey = () => {
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const envKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY);
   if (envKey && envKey.trim()) return envKey.trim();
-  const storedKey = localStorage.getItem('niitan_supabase_anon_key');
+  const storedKey = (typeof window !== 'undefined' && window.localStorage) ? localStorage.getItem('niitan_supabase_anon_key') : null;
   if (storedKey && storedKey.trim()) return storedKey.trim();
   return DEFAULT_ANON_KEY;
 };
 
 export const setStoredAnonKey = (key) => {
+  if (typeof window === 'undefined' || !window.localStorage) return;
   if (key) {
     localStorage.setItem('niitan_supabase_anon_key', key.trim());
   } else {
